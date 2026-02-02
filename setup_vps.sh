@@ -7,7 +7,7 @@ set -e
 
 APP_DIR="/var/www/agenda_barbeiro"
 USER_NAME="barbeiro_app"
-DOMAIN_OR_IP="seu_dominio_ou_ip_aqui" # Será substituído pelo usuário ou detectado automaticamente
+DOMAIN_OR_IP="_" # "_" aceita qualquer IP ou domínio (ideal para setup inicial)
 
 echo "--- Iniciando Configuração do Servidor ---"
 

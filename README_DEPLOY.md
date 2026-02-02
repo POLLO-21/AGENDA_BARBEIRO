@@ -3,16 +3,17 @@
 Este guia descreve os passos para colocar o sistema no ar utilizando uma VPS (ex: Hostinger) com Ubuntu 22.04.
 
 ## 1. Preparação dos Arquivos
-Certifique-se de que você tem todos os arquivos do projeto. Se estiver enviando do Windows, você pode compactar a pasta do projeto (exceto a pasta `.venv` e `__pycache__`) em um arquivo `.zip`.
+Um arquivo pronto para deploy foi gerado na raiz do projeto: `deploy_agenda_barbeiro.zip`.
+Este arquivo contém todo o código fonte necessário, excluindo arquivos temporários e locais.
 
-**Arquivos essenciais:**
-- `app.py`
-- `storage.py`
+**Conteúdo do ZIP:**
+- `app.py`, `storage.py`, `storage_extension.py`
 - `requirements.txt`
 - `setup_vps.sh`
-- `templates/` (pasta)
-- `static/` (pasta)
-- `migrations.sql` (se houver)
+- `templates/` e `static/`
+- Scripts de migração
+
+**Nota:** O banco de dados `agenda.db` e o arquivo `.env` não estão incluídos por segurança e boas práticas. O script de instalação criará um ambiente seguro na VPS.
 
 ## 2. Contratar VPS
 1. Contrate um plano de VPS (ex: KVM 1 na Hostinger) com **Ubuntu 22.04 64bit**.
