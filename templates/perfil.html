@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Meu Perfil - Barbeiro{% endblock %}
+{% block content %}
+<div class="login-container">
+    <h1>Meu Perfil</h1>
+    <p style="text-align:center; margin-bottom:1.5rem; color:#666;">Atualize os dados de acesso da barbearia.</p>
+    <form method="POST">
+        {% if erro %}
+            <p class="erro">{{ erro }}</p>
+        {% endif %}
+        <input type="text" name="barbearia" placeholder="Nome da barbearia" value="{{ usuario['barbearia_nome'] or '' }}">
+        <input type="text" name="usuario" placeholder="Usuário de acesso" value="{{ usuario['username'] }}">
+        <input type="password" name="senha_atual" placeholder="Senha atual (obrigatória para trocar senha)">
+        <input type="password" name="senha_nova" placeholder="Nova senha (deixe em branco para manter)">
+        <input type="password" name="senha_confirmar" placeholder="Confirmar nova senha">
+        <button type="submit">Salvar</button>
+    </form>
+</div>
+{% endblock %}

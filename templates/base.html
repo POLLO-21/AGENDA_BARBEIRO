@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Agenda do Barbeiro{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='toast.css') }}">
+</head>
+<body data-role="{{ session.get('role') }}">
+  <div id="toast-container"></div>
+  <header>
+    <h1>Agenda do Barbeiro</h1>
+    {% if session.get('usuario') %}
+      <div style="position:absolute; right:1rem; top:0.8rem; display:flex; gap:0.5rem; align-items:center;">
+        {% if session.get('role') == 'barbeiro' %}
+          <a href="{{ url_for('agenda') }}" class="icon-button" title="Gerenciar Agenda" style="background:#1976d2;">
+            &#128197;
+          </a>
+          <a href="{{ url_for('perfil') }}" class="icon-button" title="Configurações">
+            &#9881;
+          </a>
+        {% endif %}
+        <a href="{{ url_for('logout') }}" class="logout">Sair</a>
+      </div>
+    {% endif %}
+  </header>
+
+  {% block content %}{% endblock %}
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

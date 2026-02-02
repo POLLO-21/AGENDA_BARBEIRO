@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Meus Agendamentos{% endblock %}
+{% block content %}
+<main>
+  <section>
+    <h2>Meus Agendamentos</h2>
+    <ul class="lista-agendamentos">
+      {% for b in bookings %}
+      <li class="agendamento">
+        <div class="info">
+          <strong>Dia:</strong> {{ "%02d/%02d/%04d"|format(b['day'], b['month'], b['year']) }} <br>
+          <strong>Hora:</strong> {{ b['time'] }}
+          {% if b['service'] %}
+            <span class="tag-service">{{ b['service'] }}</span>
+          {% endif %}<br>
+          <strong>Status:</strong>
+          <span class="status-label {% if b['status'] == 'confirmado' %}status-confirmado{% else %}status-cancelado{% endif %}">
+            {{ b['status'] }}
+          </span>
+        </div>
+        <form action="{{ url_for('cancelar') }}" method="POST" class="form-cancelar">
+          <input type="hidden" name="booking_id" value="{{ b['id'] }}">
+          <button type="submit" class="btn-cancelar">Cancelar</button>
+        </form>
+      </li>
+      {% else %}
+      <li class="sem-agendamento">Não há agendamentos no momento.</li>
+      {% endfor %}
+    </ul>
+    <div class="voltar">
+      <a href="{{ url_for('agenda') }}" class="btn-voltar">Voltar à Agenda</a>
+    </div>
+  </section>
+</main>
+{% endblock %}

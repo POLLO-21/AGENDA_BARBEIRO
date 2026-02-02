@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Cadastro de Barbeiro{% endblock %}
+{% block content %}
+<div class="login-container">
+    <h1>Criar conta de barbeiro</h1>
+    <p style="text-align:center; margin-bottom:1.5rem; color:#666;">Use estes dados para acessar o painel.</p>
+    <form method="POST">
+        {% if erro %}
+            <p class="erro">{{ erro }}</p>
+        {% endif %}
+        <input type="text" name="barbearia" placeholder="Nome da barbearia" required>
+        <input type="text" name="usuario" placeholder="Usuário de acesso" required>
+        <input type="password" name="senha" placeholder="Senha" required>
+        <button type="submit">Criar conta</button>
+    </form>
+    <div style="margin-top: 1rem; text-align: center;">
+        <a href="{{ url_for('login') }}" style="color: #666; font-size: 0.9rem;">Já sou cadastrado</a>
+    </div>
+</div>
+{% endblock %}
+

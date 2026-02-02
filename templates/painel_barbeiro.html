@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Painel do Barbeiro{% endblock %}
+{% block content %}
+<main class="container mt-4" id="painel-barbeiro" data-ano="{{ ano }}" data-mes="{{ mes }}">
+  <section>
+      <!-- Seção: Hoje -->
+      <div class="hoje-section" style="margin-bottom: 2rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+            <h3 style="margin:0; color:#4caf50;">Agendamentos de Hoje ({{ agendamentos_hoje|length }})</h3>
+            <div style="display:flex; gap:0.5rem;">
+                <button id="btn-share-whatsapp" class="btn btn-whatsapp" data-agenda-url="{{ url_for('agenda') }}" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                  Compartilhar Link
+                </button>
+            </div>
+          </div>
+
+          {% if agendamentos_hoje %}
+            <div class="appointments-grid">
+              {% for ag in agendamentos_hoje %}
+                <div class="appointment-card">
+                  <div class="appointment-info">
+                    <div style="display:flex; align-items:center; gap:0.5rem;">
+                        <span class="time">{{ ag.time }}</span>
+                        <span class="client-name">{{ ag.cliente }}</span>
+                    </div>
+                    {% if ag.phone %}
+                        <span class="client-phone">{{ ag.phone }}</span>
+                    {% endif %}
+                  </div>
+                  <div class="appointment-actions">
+                    <span class="tag-service">{{ ag.service }}</span>
+                    <span class="status-icon">
+                      {% if ag.status == 'confirmado' %}✅{% else %}❌{% endif %}
+                    </span>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p style="color:#555; font-style:italic; background:#f5f5f5; padding:1rem; border-radius:6px;">
+                Nenhum agendamento para hoje.
+            </p>
+          {% endif %}
+      </div>
+  </section>
+</main>
+{% endblock %}

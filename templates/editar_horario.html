@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Editar Horário{% endblock %}
+{% block content %}
+<main class="container mt-4">
+  <h2 class="mb-3">Editar Horário {{ horario.time }}</h2>
+
+  <form action="{{ url_for('editar_horario', horario_id=horario.id) }}" method="POST" class="form-editar-horario">
+    <label for="time">Horário:</label>
+    <input type="text" id="time" name="time" value="{{ horario.time }}" required>
+
+    <label for="available">Disponível?</label>
+    <select id="available" name="available">
+      <option value="1" {% if horario.available %}selected{% endif %}>Sim</option>
+      <option value="0" {% if not horario.available %}selected{% endif %}>Não</option>
+    </select>
+
+    <button type="submit" class="btn btn-primary mt-2">Salvar Alterações</button>
+    <a href="{{ url_for('painel_barbeiro') }}" class="btn btn-secondary mt-2">Voltar</a>
+  </form>
+</main>
+{% endblock %}

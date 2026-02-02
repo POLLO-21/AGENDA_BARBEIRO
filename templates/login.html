@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Login - Agenda do Barbeiro{% endblock %}
+{% block content %}
+<div class="login-container">
+    <h1>Área Restrita</h1>
+    <p style="text-align:center; margin-bottom:1.5rem; color:#666;">Acesso exclusivo para o barbeiro</p>
+    <form method="POST">
+        {% if erro %}
+            <p class="erro">{{ erro }}</p>
+        {% endif %}
+        <input type="text" name="usuario" placeholder="Usuário" required>
+        <input type="password" name="senha" placeholder="Senha" required>
+        <button type="submit">Entrar</button>
+    </form>
+    <div style="margin-top: 1rem; text-align: center;">
+        <a href="{{ url_for('register_barber') }}" style="color: #666; font-size: 0.9rem;">Criar conta</a>
+        <br><br>
+        <a href="{{ url_for('agenda') }}" style="color: #666; font-size: 0.9rem;">Voltar para a agenda</a>
+    </div>
+</div>
+{% endblock %}

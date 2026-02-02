@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Editar Dia{% endblock %}
+{% block content %}
+<main class="container mt-4">
+  <section>
+  <h2 class="mb-3">Editar Dia {{ dia.numero }}</h2>
+  <h3>Horários deste dia</h3>
+  
+  {% if not slots %}
+      <div style="text-align:center; color:#666; margin: 2rem 0;">
+          <em>Nenhum horário cadastrado para este dia.</em>
+      </div>
+  {% else %}
+      <div class="horarios-columns">
+        <!-- Coluna Manhã -->
+        <div class="horarios-column">
+          <h4>Manhã</h4>
+          <ul class="lista-horarios-admin">
+            {% for slot in slots if slot.time < '12:00' %}
+            <li>
+                <div class="slot-info">
+                    <strong class="slot-time">{{ slot.time }}</strong> 
+                    {% if slot.available %}
+                      <span class="status-ativo">(Ativo)</span>
+                    {% else %}
+                      <span class="status-inativo">(Inativo/Ocupado)</span>
+                    {% endif %}
+                </div>
+                <div class="editar-dia-actions">
+                    <a href="{{ url_for('editar_horario', horario_id=slot.id) }}" class="btn btn-sm btn-primary">Editar</a>
+                    
+                    {% if slot.is_taken %}
+                        <form action="{{ url_for('liberar_horario_dia') }}" method="POST" style="display:inline;">
+                            <input type="hidden" name="day" value="{{ dia.raw_numero }}">
+                            <input type="hidden" name="time" value="{{ slot.time }}">
+                            <input type="hidden" name="month" value="{{ dia.mes }}">
+                            <input type="hidden" name="year" value="{{ dia.ano }}">
+                            <input type="hidden" name="slot_id" value="{{ slot.id }}">
+                            <button type="submit" class="btn btn-sm btn-info" style="color:white;">Liberar</button>
+                        </form>
+                    {% elif not slot.active %}
+                        <form action="{{ url_for('ativar_horario', horario_id=slot.id) }}" method="POST" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-success">Ativar</button>
+                        </form>
+                    {% else %}
+                        <form action="{{ url_for('excluir_horario', horario_id=slot.id) }}" method="POST" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-danger">Desativar</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </li>
+            {% else %}
+            <li style="font-style:italic; color:#777;">Sem horários de manhã.</li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        <!-- Coluna Tarde -->
+        <div class="horarios-column">
+          <h4>Tarde</h4>
+          <ul class="lista-horarios-admin">
+            {% for slot in slots if slot.time >= '12:00' %}
+            <li>
+                <div class="slot-info">
+                    <strong class="slot-time">{{ slot.time }}</strong> 
+                    {% if slot.available %}
+                      <span class="status-ativo">(Ativo)</span>
+                    {% else %}
+                      <span class="status-inativo">(Inativo/Ocupado)</span>
+                    {% endif %}
+                </div>
+                <div class="editar-dia-actions">
+                    <a href="{{ url_for('editar_horario', horario_id=slot.id) }}" class="btn btn-sm btn-primary">Editar</a>
+                    
+                    {% if slot.is_taken %}
+                        <form action="{{ url_for('liberar_horario_dia') }}" method="POST" style="display:inline;">
+                            <input type="hidden" name="day" value="{{ dia.raw_numero }}">
+                            <input type="hidden" name="time" value="{{ slot.time }}">
+                            <input type="hidden" name="month" value="{{ dia.mes }}">
+                            <input type="hidden" name="year" value="{{ dia.ano }}">
+                            <input type="hidden" name="slot_id" value="{{ slot.id }}">
+                            <button type="submit" class="btn btn-sm btn-info" style="color:white;">Liberar</button>
+                        </form>
+                    {% elif not slot.active %}
+                        <form action="{{ url_for('ativar_horario', horario_id=slot.id) }}" method="POST" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-success">Ativar</button>
+                        </form>
+                    {% else %}
+                        <form action="{{ url_for('excluir_horario', horario_id=slot.id) }}" method="POST" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-danger">Desativar</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </li>
+            {% else %}
+            <li style="font-style:italic; color:#777;">Sem horários à tarde.</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+  {% endif %}
+
+  <div class="editar-dia-footer" style="flex-wrap: wrap; gap: 10px;">
+    {% if not slots or not dia.disponivel %}
+    <form action="{{ url_for('restaurar_dia', dia_id=dia.raw_numero, mes=dia.mes, ano=dia.ano) }}" method="POST">
+        <button type="submit" class="btn btn-success">Restaurar Horários Padrão</button>
+    </form>
+    {% endif %}
+
+    <form action="{{ url_for('excluir_dia', dia_id=dia.raw_numero, mes=dia.mes, ano=dia.ano) }}" method="POST" onsubmit="return confirm('Tem certeza? Isso desativará todos os horários deste dia.');">
+        <button type="submit" class="btn btn-danger">Excluir Dia Inteiro (Desativar Tudo)</button>
+    </form>
+    <a href="{{ url_for('painel_barbeiro', mes=dia.mes, ano=dia.ano) }}" class="btn btn-secondary">Voltar ao Painel</a>
+  </div>
+  </section>
+</main>
+{% endblock %}
