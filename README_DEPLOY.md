@@ -1,62 +1,76 @@
-# Guia de Deploy - Barber Calendar
+# Guia Passo a Passo de Deploy - Barber Calendar
 
-Este guia descreve os passos para colocar o sistema no ar utilizando uma VPS (ex: Hostinger) com Ubuntu 22.04.
+Este guia explica como colocar seu sistema no ar usando uma VPS (Servidor Virtual), como a da Hostinger.
 
-## 1. Preparação dos Arquivos
-Um arquivo pronto para deploy foi gerado na raiz do projeto: `deploy_barber_calendar.zip`.
-Este arquivo contém todo o código fonte necessário, excluindo arquivos temporários e locais.
+## 1. Comprar a VPS (Na Hostinger)
+1.  No painel da Hostinger, clique em **"Compre agora"** (ou "Setup" se já comprou) na seção VPS.
+2.  Escolha o plano **VPS KVM 1** (suficiente para começar).
+3.  Em **Imagem do Servidor** (Operating System), escolha **Ubuntu 22.04 64bit**.
+4.  Defina uma **Senha de Root** forte e anote-a (você vai precisar dela!).
+5.  Finalize a compra e aguarde a ativação.
+6.  Anote o **Endereço IP** do seu servidor (ex: `192.168.1.50`).
 
-**Conteúdo do ZIP:**
-- `app.py`, `storage.py`
-- `requirements.txt`
-- `setup_vps.sh`
-- `templates/` e `static/`
-- Scripts de migração
+## 2. Conectar ao Servidor
+Você precisa de um terminal para controlar o servidor.
+*   **Windows**: Abra o PowerShell ou CMD.
+*   **Mac/Linux**: Abra o Terminal.
 
-**Nota:** O banco de dados `agenda.db` e o arquivo `.env` não estão incluídos por segurança e boas práticas. O script de instalação criará um ambiente seguro na VPS.
-
-## 2. Contratar VPS
-1. Contrate um plano de VPS (ex: KVM 1 na Hostinger) com **Ubuntu 22.04 64bit**.
-2. Anote o **IP** e a **senha de root** do servidor.
-
-## 3. Acessar o Servidor
-Use um terminal (PowerShell, CMD ou Git Bash) para acessar via SSH:
-```bash
+Digite o comando abaixo (troque pelo seu IP):
+```powershell
 ssh root@SEU_IP_DA_VPS
-# Digite a senha quando pedir
 ```
+*   Digite `yes` se perguntar sobre autenticidade.
+*   Digite a senha que você criou (o cursor não vai mexer enquanto você digita, é normal).
 
-## 4. Enviar Arquivos
-Você pode usar o comando `scp` (do seu computador local) para enviar o zip ou os arquivos:
-```bash
-# Exemplo (rode do seu computador, não da VPS):
-scp -r "C:\caminho\para\agenda_barbeiro\*" root@SEU_IP_DA_VPS:/var/www/agenda_barbeiro_temp/
-```
-*Alternativa:* Se preferir, use um cliente SFTP como FileZilla.
-
-## 5. Executar Script de Instalação
-No terminal da VPS (SSH), mova os arquivos para o local correto (se não enviou direto) e rode o script:
+## 3. Baixar o Código (Via Git)
+Agora que está dentro do servidor, vamos baixar seu projeto.
+*(Se seu repositório for privado, você precisará gerar um token no GitHub ou usar a opção de upload manual via FileZilla)*.
 
 ```bash
-# Dê permissão de execução
+# 1. Instale o Git (se não tiver)
+apt update && apt install git -y
+
+# 2. Clone seu repositório (Troque pela URL do SEU git)
+git clone https://github.com/SEU_USUARIO/agenda_barbeiro.git
+
+# 3. Entre na pasta
+cd agenda_barbeiro
+```
+
+## 4. Instalar Tudo (Automático)
+Criamos um script que faz todo o trabalho difícil (instala Python, Nginx, Banco de Dados, etc).
+
+Estando dentro da pasta `agenda_barbeiro`, rode:
+
+```bash
+# Dar permissão de execução
 chmod +x setup_vps.sh
 
-# Execute o script
-sudo ./setup_vps.sh
+# Rodar a instalação
+./setup_vps.sh
 ```
 
-O script irá:
-1. Atualizar o sistema.
-2. Instalar Python, Nginx e Gunicorn.
-3. Configurar o firewall.
-4. Criar o usuário de serviço.
-5. Instalar as dependências do `requirements.txt`.
-6. Gerar uma chave de segurança (`.env`).
-7. Configurar e iniciar o servidor web.
+O script vai levar alguns minutos. Quando terminar, ele dirá "Configuração Concluída!".
 
-## 6. Verificação
-Acesse `http://SEU_IP_DA_VPS` no navegador. O sistema deve estar rodando.
+## 5. Testar
+Abra seu navegador e digite o IP da VPS:
+`http://SEU_IP_DA_VPS`
 
-## Observações
-- O número do WhatsApp está configurado em `static/script.js`.
-- O banco de dados `agenda.db` será criado automaticamente na primeira execução se não for enviado.
+Seu sistema deve estar online!
+
+---
+
+## Dúvidas Comuns
+
+### Como atualizar o site depois?
+Se você fez alterações no código e subiu para o Git:
+1.  Acesse a VPS (`ssh root@...`).
+2.  Entre na pasta: `cd agenda_barbeiro`.
+3.  Baixe as novidades: `git pull`.
+4.  Rode o script de atualização (vamos criar um simples, ou apenas reinicie o serviço):
+    ```bash
+    systemctl restart barber_calendar
+    ```
+
+### O banco de dados zerou?
+O banco de dados oficial fica em `/var/www/barber_calendar/instance/agenda.db` (ou na raiz, dependendo da configuração). O script de deploy não apaga o banco existente se você rodar novamente, mas cuidado ao substituir arquivos manualmente.

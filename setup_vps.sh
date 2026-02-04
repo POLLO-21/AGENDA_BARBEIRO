@@ -7,52 +7,64 @@ set -e
 
 APP_DIR="/var/www/barber_calendar"
 USER_NAME="barber_app"
-DOMAIN_OR_IP="_" # "_" aceita qualquer IP ou domínio (ideal para setup inicial)
+DOMAIN_OR_IP="_" # "_" aceita qualquer IP ou domínio
+
+# Diretório atual onde o script está rodando
+CURRENT_DIR=$(pwd)
 
 echo "--- Iniciando Configuração do Servidor ---"
 
 # 1. Atualizar sistema
-echo "[1/8] Atualizando pacotes do sistema..."
+echo "[1/9] Atualizando pacotes do sistema..."
 apt-get update && apt-get upgrade -y
 
 # 2. Instalar dependências
-echo "[2/8] Instalando Python, Nginx e ferramentas..."
-apt-get install -y python3-pip python3-venv nginx git ufw
+echo "[2/9] Instalando Python, Nginx e ferramentas..."
+apt-get install -y python3-pip python3-venv nginx git ufw acl
 
 # 3. Configurar Firewall
-echo "[3/8] Configurando Firewall..."
+echo "[3/9] Configurando Firewall..."
 ufw allow OpenSSH
 ufw allow 'Nginx Full'
-# ufw enable # Comentado para evitar bloqueio acidental se não estiver interativo, ative manualmente se desejar
+# ufw enable # Ative manualmente se confirmar que tem acesso SSH
 
-# 4. Criar usuário do sistema para a aplicação (segurança)
+# 4. Criar usuário do sistema
 if id "$USER_NAME" &>/dev/null; then
     echo "Usuário $USER_NAME já existe."
 else
-    echo "[4/8] Criando usuário de serviço $USER_NAME..."
+    echo "[4/9] Criando usuário de serviço $USER_NAME..."
     useradd -m -s /bin/bash $USER_NAME
 fi
 
 # 5. Configurar diretório da aplicação
-echo "[5/8] Configurando diretório $APP_DIR..."
+echo "[5/9] Configurando diretório $APP_DIR..."
 mkdir -p $APP_DIR
-# Permissões: usuário barbeiro_app é dono, mas grupo www-data tem acesso
+
+# Copiar arquivos do diretório atual para o diretório de destino (se não for o mesmo)
+if [ "$CURRENT_DIR" != "$APP_DIR" ]; then
+    echo "Copiando arquivos de $CURRENT_DIR para $APP_DIR..."
+    cp -r ./* $APP_DIR/
+    # Garantir que setup_vps.sh não seja copiado recursivamente se estiver dentro
+fi
+
+# Ajustar permissões
+echo "Ajustando permissões..."
 chown -R $USER_NAME:www-data $APP_DIR
 chmod -R 775 $APP_DIR
 
-echo "IMPORTANTE: Agora você deve fazer upload dos arquivos do projeto para $APP_DIR"
-echo "Pressione ENTER quando os arquivos estiverem lá (ou CTRL+C para cancelar e rodar depois)..."
-# Em um script 100% automático poderíamos pular isso, mas aqui precisamos garantir que os arquivos existam
-# Para facilitar, vamos assumir que o usuário vai rodar este script APÓS subir os arquivos, ou o script cria a estrutura básica.
-
-# Vamos criar o venv de qualquer forma
-echo "[6/8] Configurando Ambiente Virtual Python..."
+# 6. Configurar Ambiente Virtual
+echo "[6/9] Configurando Ambiente Virtual Python..."
 su - $USER_NAME -c "cd $APP_DIR && python3 -m venv .venv"
-su - $USER_NAME -c "cd $APP_DIR && .venv/bin/pip install -r requirements.txt" || echo "AVISO: requirements.txt não encontrado ou erro na instalação. Verifique o upload dos arquivos."
+su - $USER_NAME -c "cd $APP_DIR && .venv/bin/pip install -r requirements.txt" || echo "ERRO: Falha ao instalar requirements.txt"
 
-# Gerar .env com SECRET_KEY seguro se não existir
-echo "Gerando .env com chave de segurança..."
+# Gerar .env se não existir
+echo "Verificando .env..."
 su - $USER_NAME -c "cd $APP_DIR && if [ ! -f .env ]; then echo \"SECRET_KEY=$(openssl rand -hex 32)\" > .env; fi"
+
+# Garantir permissão de escrita no banco de dados (se existir ou para a pasta instance)
+su - $USER_NAME -c "mkdir -p $APP_DIR/instance"
+chown -R $USER_NAME:www-data $APP_DIR/instance
+chmod -R 775 $APP_DIR/instance
 
 # 6. Configurar Gunicorn (Systemd Service)
 echo "[7/8] Criando serviço Systemd para Gunicorn..."
