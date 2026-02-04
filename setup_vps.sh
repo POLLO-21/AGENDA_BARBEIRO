@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Script de Configuração Automática para Agenda Barbeiro na VPS (Ubuntu 22.04)
+# Script de Configuração Automática para Barber Calendar na VPS (Ubuntu 22.04)
 # Uso: sudo ./setup_vps.sh
 
 set -e
 
-APP_DIR="/var/www/agenda_barbeiro"
-USER_NAME="barbeiro_app"
+APP_DIR="/var/www/barber_calendar"
+USER_NAME="barber_app"
 DOMAIN_OR_IP="_" # "_" aceita qualquer IP ou domínio (ideal para setup inicial)
 
 echo "--- Iniciando Configuração do Servidor ---"
@@ -56,9 +56,9 @@ su - $USER_NAME -c "cd $APP_DIR && if [ ! -f .env ]; then echo \"SECRET_KEY=$(op
 
 # 6. Configurar Gunicorn (Systemd Service)
 echo "[7/8] Criando serviço Systemd para Gunicorn..."
-cat > /etc/systemd/system/agenda_barbeiro.service <<EOF
+cat > /etc/systemd/system/barber_calendar.service <<EOF
 [Unit]
-Description=Gunicorn instance to serve agenda_barbeiro
+Description=Gunicorn instance to serve barber_calendar
 After=network.target
 
 [Service]
@@ -66,33 +66,33 @@ User=$USER_NAME
 Group=www-data
 WorkingDirectory=$APP_DIR
 Environment="PATH=$APP_DIR/.venv/bin"
-ExecStart=$APP_DIR/.venv/bin/gunicorn --workers 3 --bind unix:agenda_barbeiro.sock -m 007 app:app
+ExecStart=$APP_DIR/.venv/bin/gunicorn --workers 3 --bind unix:barber_calendar.sock -m 007 app:app
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-systemctl start agenda_barbeiro
-systemctl enable agenda_barbeiro
+systemctl start barber_calendar
+systemctl enable barber_calendar
 
 # 7. Configurar Nginx
 echo "[8/8] Configurando Nginx..."
-cat > /etc/nginx/sites-available/agenda_barbeiro <<EOF
+cat > /etc/nginx/sites-available/barber_calendar <<EOF
 server {
     listen 80;
     server_name $DOMAIN_OR_IP;
 
     location / {
         include proxy_params;
-        proxy_pass http://unix:$APP_DIR/agenda_barbeiro.sock;
+        proxy_pass http://unix:$APP_DIR/barber_calendar.sock;
     }
 }
 EOF
 
-ln -sf /etc/nginx/sites-available/agenda_barbeiro /etc/nginx/sites-enabled
+ln -sf /etc/nginx/sites-available/barber_calendar /etc/nginx/sites-enabled
 rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl restart nginx
 
 echo "--- Configuração Concluída! ---"
-echo "Verifique se o serviço está rodando com: systemctl status agenda_barbeiro"
+echo "Verifique se o serviço está rodando com: systemctl status barber_calendar"
 echo "Acesse seu servidor pelo IP ou Domínio."

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Login - Agenda do Barbeiro{% endblock %}
+{% block title %}Login - Barber Calendar{% endblock %}
 {% block content %}
 <div class="login-container">
     <h1>Área Restrita</h1>
@@ -13,8 +13,6 @@
         <button type="submit">Entrar</button>
     </form>
     <div style="margin-top: 1rem; text-align: center;">
-        <a href="{{ url_for('register_barber') }}" style="color: #666; font-size: 0.9rem;">Criar conta</a>
-        <br><br>
         <a href="{{ url_for('agenda') }}" style="color: #666; font-size: 0.9rem;">Voltar para a agenda</a>
     </div>
 </div>

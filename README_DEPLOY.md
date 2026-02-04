@@ -1,13 +1,13 @@
-# Guia de Deploy - Agenda Barbeiro
+# Guia de Deploy - Barber Calendar
 
 Este guia descreve os passos para colocar o sistema no ar utilizando uma VPS (ex: Hostinger) com Ubuntu 22.04.
 
 ## 1. Preparação dos Arquivos
-Um arquivo pronto para deploy foi gerado na raiz do projeto: `deploy_agenda_barbeiro.zip`.
+Um arquivo pronto para deploy foi gerado na raiz do projeto: `deploy_barber_calendar.zip`.
 Este arquivo contém todo o código fonte necessário, excluindo arquivos temporários e locais.
 
 **Conteúdo do ZIP:**
-- `app.py`, `storage.py`, `storage_extension.py`
+- `app.py`, `storage.py`
 - `requirements.txt`
 - `setup_vps.sh`
 - `templates/` e `static/`

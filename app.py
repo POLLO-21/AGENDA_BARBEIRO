@@ -15,7 +15,33 @@ storage.init_db()
 def home():
     if session.get("role") == "barbeiro":
         return redirect(url_for("painel_barbeiro"))
+    
+    # Se já tem barbearia na sessão, vai para agenda
+    if session.get("barbershop_id"):
+        return redirect(url_for("agenda"))
+
+    # Caso contrário, lista as barbearias disponíveis
+    shops = storage.get_barbershops()
+    return render_template("selecionar_barbearia.html", shops=shops)
+
+@app.route("/selecionar_loja/<int:shop_id>")
+def selecionar_loja(shop_id):
+    shop = storage.get_barbershop(shop_id)
+    if shop:
+        session["barbershop_id"] = shop["id"]
+        session["barbershop_nome"] = shop["name"]
+        session["barbershop_slug"] = shop["slug"]
     return redirect(url_for("agenda"))
+
+@app.route("/b/<slug>")
+def selecionar_loja_slug(slug):
+    shop = storage.get_barbershop_by_slug(slug)
+    if shop:
+        session["barbershop_id"] = shop["id"]
+        session["barbershop_nome"] = shop["name"]
+        session["barbershop_slug"] = shop["slug"]
+        return redirect(url_for("agenda"))
+    return "Barbearia não encontrada", 404
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -24,11 +50,26 @@ def login():
         usuario = request.form.get("usuario")
         senha = request.form.get("senha")
         user = storage.verify_user(usuario, senha)
-        if user and user["role"] == "barbeiro":
+        if user:
             session["user_id"] = user["id"]
             session["usuario"] = user["username"]
             session["role"] = user["role"]
-            return redirect(url_for("painel_barbeiro"))
+            
+            if user["role"] == "admin":
+                return redirect(url_for("admin_dashboard"))
+
+            # Carrega a barbearia do usuário na sessão
+            u_full = storage.get_user_by_id(user["id"])
+            if u_full and u_full["barbershop_id"]:
+                shop = storage.get_barbershop(u_full["barbershop_id"])
+                if shop:
+                    session["barbershop_id"] = shop["id"]
+                    session["barbershop_nome"] = shop["name"]
+                    session["barbershop_slug"] = shop["slug"]
+            
+            if user["role"] == "barbeiro":
+                return redirect(url_for("painel_barbeiro"))
+            return redirect(url_for("agenda"))
 
         erro = "Usuário ou senha inválidos"
     return render_template("login.html", erro=erro)
@@ -45,7 +86,7 @@ MESES = [
     "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
 ]
 
-def build_dias_from_db(year=None, month=None, barber_id=None):
+def build_dias_from_db(year=None, month=None, barber_id=None, barbershop_id=None):
     if year is None or month is None:
         now = datetime.now()
         year = now.year
@@ -67,11 +108,12 @@ def build_dias_from_db(year=None, month=None, barber_id=None):
         current_date = datetime(year, month, d).date()
         is_past = current_date < today
         
-        slots = storage.get_availability(d, year=year, month=month, barber_id=barber_id)
+        slots = storage.get_availability(d, year=year, month=month, barber_id=barber_id, barbershop_id=barbershop_id)
         disponivel = any(s.get("available", True) for s in slots)
         dias.append({
             "tipo": "dia",
-            "numero": d, 
+            "numero": f"{d:02d}", 
+            "raw_numero": d,
             "disponivel": disponivel,
             "passado": is_past
         })
@@ -81,7 +123,7 @@ def build_dias_from_db(year=None, month=None, barber_id=None):
         "mes": month,
         "ano": year,
         "current_year": datetime.now().year,
-        "mes_nome": f"{MESES[month-1]}/{year}",
+        "mes_nome": f"{MESES[month-1]}",
         "meses_lista": MESES,
         "semana_header": ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
     }
@@ -90,12 +132,19 @@ def build_dias_from_db(year=None, month=None, barber_id=None):
 def agenda():
     role = session.get("role")
     
-    barber_id = storage.get_default_barber_id()
-    barbearia_nome = "Barbearia"
-    if barber_id:
-        u = storage.get_user_by_id(barber_id)
-        if u:
-            barbearia_nome = (u['barbearia_nome'] if 'barbearia_nome' in u.keys() else None) or u['username'].capitalize()
+    # Verifica barbearia selecionada
+    barbershop_id = session.get("barbershop_id")
+    if not barbershop_id:
+        return redirect(url_for("home"))
+
+    # Buscar dados da barbearia para pegar o telefone
+    shop = storage.get_barbershop(barbershop_id)
+    barbershop_phone = shop["phone"] if shop else None
+
+    barber_id = None # Opcional: filtrar por barbeiro específico se houver seleção
+    # Por enquanto, assume que agenda mostra disponibilidade da barbearia (todos ou default)
+    
+    barbearia_nome = session.get("barbershop_nome", "Barbearia")
 
     if role == "cliente" or role is None:
         mes = None
@@ -108,16 +157,20 @@ def agenda():
             mes = None
             ano = None
 
-    dados_cal = build_dias_from_db(year=ano, month=mes, barber_id=barber_id)
-    return render_template("agenda.html", **dados_cal, barber_id=barber_id, barbearia_nome=barbearia_nome)
+    dados_cal = build_dias_from_db(year=ano, month=mes, barber_id=barber_id, barbershop_id=barbershop_id)
+    return render_template("agenda.html", **dados_cal, barber_id=barber_id, barbearia_nome=barbearia_nome, barbershop_phone=barbershop_phone)
 
 @app.route("/horarios/<int:dia>")
 def horarios(dia):
     ano = request.args.get("ano", type=int)
     mes = request.args.get("mes", type=int)
-    barber_id = storage.get_default_barber_id()
+    barbershop_id = session.get("barbershop_id")
+    # barber_id = storage.get_default_barber_id() # Não usar mais default global
+    
+    if not barbershop_id:
+        return jsonify({"error": "no_shop_selected"}), 400
 
-    slots = storage.get_availability(dia, year=ano, month=mes, barber_id=barber_id)
+    slots = storage.get_availability(dia, year=ano, month=mes, barber_id=None, barbershop_id=barbershop_id)
     horarios_disponiveis = [s["time"] for s in slots if s.get("available", True)]
     return jsonify({"dia": dia, "horarios": horarios_disponiveis, "detalhes": slots})
 
@@ -128,14 +181,18 @@ def reservar():
         user_id = public_client["id"]
     else:
         user_id = session.get("user_id")
+        
+    barbershop_id = session.get("barbershop_id")
+    if not barbershop_id:
+        return jsonify({"success": False, "error": "no_shop_selected"})
+
     # aceita tanto form quanto JSON
     dia = request.form.get("dia") or (request.json and request.json.get("dia"))
     horario = request.form.get("horario") or (request.json and request.json.get("horario"))
     service = request.form.get("service") or (request.json and request.json.get("service"))
     ano = request.form.get("ano") or (request.json and request.json.get("ano"))
     mes = request.form.get("mes") or (request.json and request.json.get("mes"))
-    barber_id = storage.get_default_barber_id()
-
+    
     try:
         dia = int(dia)
     except:
@@ -161,15 +218,14 @@ def reservar():
         if booking_date < datetime.now().date():
              return jsonify({"success": False, "error": "past_date"})
     except:
-        pass # Se der erro na data, deixa passar e falhará mais tarde ou será tratado
+        pass 
 
     if not service:
         service = "corte de cabelo"
 
-    customer_phone = request.form.get("customer_phone") or (request.json and request.json.get("customer_phone"))
     customer_name = request.form.get("customer_name") or (request.json and request.json.get("customer_name"))
 
-    ok = storage.create_booking(user_id, dia, horario, service, year=year, month=month, customer_phone=customer_phone, barber_id=barber_id, customer_name=customer_name)
+    ok = storage.create_booking(user_id, dia, horario, service, year=year, month=month, customer_phone=None, barber_id=None, customer_name=customer_name, barbershop_id=barbershop_id)
     if ok:
         return jsonify({"success": True})
     else:
@@ -180,12 +236,48 @@ def register_barber():
     if request.method == "POST":
         usuario = request.form.get("usuario")
         senha = request.form.get("senha")
-        barbearia = request.form.get("barbearia")
+        barbearia_nome = request.form.get("barbearia")
+        phone = request.form.get("phone")
+        # email removido conforme solicitação
+        address = request.form.get("address")
         
         if storage.get_user_by_username(usuario):
             return render_template("register_barber.html", erro="Usuário já existe")
+
+        # Verificações adicionais de unicidade (Barbearia e Telefone)
+        conn = storage.get_conn()
+        cur = conn.cursor()
+        
+        cur.execute("SELECT id FROM barbershops WHERE name = ?", (barbearia_nome,))
+        if cur.fetchone():
+            conn.close()
+            return render_template("register_barber.html", erro="Nome da barbearia já existe")
+
+        cur.execute("SELECT id FROM barbershops WHERE phone = ?", (phone,))
+        if cur.fetchone():
+            conn.close()
+            return render_template("register_barber.html", erro="Telefone já cadastrado em uma barbearia")
+
+        cur.execute("SELECT id FROM users WHERE phone = ?", (phone,))
+        if cur.fetchone():
+            conn.close()
+            return render_template("register_barber.html", erro="Telefone já vinculado a um usuário")
             
-        storage.create_user(usuario, senha, role="barbeiro", barbearia_nome=barbearia)
+        # Cria a barbearia
+        # Gerar slug simples
+        slug = barbearia_nome.lower().replace(" ", "-")
+        
+        # Check slug uniqueness (basic)
+        cur.execute("SELECT id FROM barbershops WHERE slug=?", (slug,))
+        if cur.fetchone():
+            slug = f"{slug}-{datetime.now().strftime('%S')}"
+            
+        cur.execute("INSERT INTO barbershops(name, slug, phone, address) VALUES(?,?,?,?)", (barbearia_nome, slug, phone, None))
+        shop_id = cur.lastrowid
+        conn.commit()
+        conn.close()
+
+        storage.create_user(usuario, senha, role="barbeiro", barbearia_nome=barbearia_nome, phone=phone, barbershop_id=shop_id, email=None)
         return redirect(url_for("login"))
         
     return render_template("register_barber.html")
@@ -205,6 +297,7 @@ def perfil():
         nova_senha = request.form.get("senha_nova")
         confirmar_senha = request.form.get("senha_confirmar")
         nova_barbearia = request.form.get("barbearia")
+        phone = request.form.get("phone")
         
         if novo_usuario and novo_usuario != u["username"]:
             existente = storage.get_user_by_username(novo_usuario)
@@ -222,12 +315,19 @@ def perfil():
                     erro = "Nova senha e confirmação não conferem"
         
         if not erro:
-            storage.update_user_profile(user_id, username=novo_usuario, password=nova_senha if nova_senha else None, barbearia_nome=nova_barbearia)
+            storage.update_user_profile(user_id, username=novo_usuario, password=nova_senha if nova_senha else None, barbearia_nome=nova_barbearia, phone=phone, address=None)
             if novo_usuario:
                 session["usuario"] = novo_usuario
+            if nova_barbearia:
+                session["barbershop_nome"] = nova_barbearia
             return redirect(url_for("painel_barbeiro"))
     
-    return render_template("perfil.html", usuario=u, erro=erro)
+    # Carregar dados da barbearia se existir
+    shop_data = None
+    if u["barbershop_id"]:
+        shop_data = storage.get_barbershop(u["barbershop_id"])
+
+    return render_template("perfil.html", usuario=u, shop=shop_data, erro=erro)
 
 
 @app.route("/me/agendamentos")
@@ -284,9 +384,11 @@ def painel_barbeiro():
     agendamentos_hoje_rows = storage.get_bookings_by_day_with_usernames(now.day, now.year, now.month, barber_id=session["user_id"])
     agendamentos_hoje = []
     for r in agendamentos_hoje_rows:
+        # Usa customer_name se existir, senão usa username (do cadastro ou "Cliente")
+        nome_cliente = r["customer_name"] if r["customer_name"] else r["username"]
         agendamentos_hoje.append({
             "id": r["id"],
-            "cliente": r["username"],
+            "cliente": nome_cliente,
             "phone": r["customer_phone"],
             "time": r["time"],
             "status": r["status"],
@@ -304,9 +406,10 @@ def api_agendamentos_dia(dia):
     rows = storage.get_bookings_by_day_with_usernames(dia, year=ano, month=mes, barber_id=session["user_id"])
     dados = []
     for r in rows:
+        nome_cliente = r["customer_name"] if r["customer_name"] else r["username"]
         dados.append({
             "id": r["id"],
-            "cliente": r["username"],
+            "cliente": nome_cliente,
             "phone": r["customer_phone"],
             "time": r["time"],
             "status": r["status"],
@@ -334,9 +437,9 @@ def editar_dia(dia_id):
     
     # Se ano/mes foram passados, formata para exibição
     if mes and ano:
-        dia_display = f"{dia_id}/{mes:02d}/{ano}"
+        dia_display = f"{dia_id:02d}/{mes:02d}/{ano}"
     else:
-        dia_display = str(dia_id)
+        dia_display = f"{dia_id:02d}"
 
     dia = {
         "numero": dia_display, 
@@ -435,6 +538,75 @@ def liberar_horario_dia():
         storage.set_slot_active(int(slot_id), 1)
 
     return redirect(request.referrer or url_for("painel_barbeiro"))
+
+@app.route("/admin")
+def admin_dashboard():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    
+    # Verifica se é admin
+    role = session.get("role")
+    if role != "admin":
+        return redirect(url_for("agenda"))
+        
+    shops = storage.get_all_barbershops_with_stats()
+    return render_template("admin_dashboard.html", shops=shops)
+
+@app.route("/admin/barbershop/<int:shop_id>", methods=["GET", "POST"])
+def admin_barbershop_details(shop_id):
+    if "user_id" not in session or session.get("role") != "admin":
+        return redirect(url_for("login"))
+    
+    shop = storage.get_barbershop(shop_id)
+    if not shop:
+        return redirect(url_for("admin_dashboard"))
+        
+    users = storage.get_users_by_barbershop(shop_id)
+    # Tenta encontrar o usuário principal (primeiro barbeiro)
+    main_user = next((u for u in users if u["role"] == "barbeiro"), None)
+
+    if request.method == "POST":
+        name = request.form.get("name")
+        slug = request.form.get("slug")
+        phone = request.form.get("phone")
+        address = request.form.get("address")
+        
+        # Dados do usuário
+        username = request.form.get("username")
+        password = request.form.get("password")
+        
+        # Check slug uniqueness if changed
+        if slug != shop["slug"]:
+            existing = storage.get_barbershop_by_slug(slug)
+            if existing and existing["id"] != shop_id:
+                return render_template("admin_barbershop_details.html", shop=shop, users=users, main_user=main_user, erro="Slug já existe")
+        
+        storage.update_barbershop(shop_id, name, slug, phone, address)
+        
+        # Atualizar usuário se fornecido e se existir um usuário principal
+        if main_user and username:
+            storage.update_user_profile(main_user["id"], username=username, password=password if password else None)
+            
+        return redirect(url_for("admin_barbershop_details", shop_id=shop_id))
+        
+    return render_template("admin_barbershop_details.html", shop=shop, users=users, main_user=main_user)
+
+@app.route("/admin/barbershop/<int:shop_id>/delete", methods=["POST"])
+def admin_delete_barbershop(shop_id):
+    if "user_id" not in session or session.get("role") != "admin":
+        return redirect(url_for("login"))
+        
+    storage.delete_barbershop(shop_id)
+    return redirect(url_for("admin_dashboard"))
+
+@app.route("/setup_admin_secret_123")
+def setup_admin():
+    # Rota secreta temporária para criar o primeiro admin
+    # Em produção, remover ou proteger melhor
+    ok = storage.create_admin("admin", "admin123")
+    if ok:
+        return "Admin criado com sucesso: admin / admin123"
+    return "Admin já existe ou erro."
 
 if __name__ == "__main__":
     # host='0.0.0.0' permite acesso da rede local (necessário para teste real via celular)

@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const agendaMonth = agendaPage ? parseInt(agendaPage.dataset.mes) : null;
     const agendaBarberId = agendaPage && agendaPage.dataset.barberId ? parseInt(agendaPage.dataset.barberId) : null;
 
-    // --- Modal e Agendamento (Agenda Cliente) ---
+    // --- Modal e Agendamento (Barber Calendar Cliente) ---
     const modal = document.getElementById('modalHorarios');
     const listaHorarios = document.getElementById("lista-horarios");
     const fecharBtn = document.querySelector(".fechar");
@@ -106,7 +106,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const btnShare = document.getElementById("btn-share-whatsapp");
         if (btnShare) {
             btnShare.addEventListener("click", () => {
-                const path = btnShare.dataset.agendaUrl || "/agenda";
+                // Tenta pegar o slug da barbearia se disponível no dataset
+                const shopSlug = document.getElementById("shop-slug-data") ? document.getElementById("shop-slug-data").value : null;
+                const path = shopSlug ? `/b/${shopSlug}` : (btnShare.dataset.agendaUrl || "/agenda");
                 const agendaUrl = `${window.location.origin}${path}`;
                 const message = `Olá! Agende seu horário comigo pelo link: ${agendaUrl}`;
                 const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
@@ -132,7 +134,13 @@ document.addEventListener("DOMContentLoaded", () => {
                             container.innerHTML = "<p>Erro ao carregar agendamentos.</p>";
                             return;
                         }
-                        let html = `<p><strong>Dia:</strong> ${data.dia}</p>`;
+                        
+                        let diaFmt = data.dia;
+                        if (mes && ano) {
+                            diaFmt = `${String(data.dia).padStart(2, '0')}/${String(mes).padStart(2, '0')}/${ano}`;
+                        }
+                        
+                        let html = `<p><strong>Dia:</strong> ${diaFmt}</p>`;
                         html += `<button id="btn-editar-dia-${dia}" class="btn btn-sm btn-primary">Configurar horários do dia</button>`;
 
                         if (!data.agendamentos || data.agendamentos.length === 0) {
@@ -256,10 +264,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     <button type="button" data-servico="somente barba" class="btn btn-secondary btn-sm btn-servico">Somente barba</button>
                 </div>
                 <div style="margin-top:0.75rem; text-align:center;">
-                    <input type="text" id="customer-name" placeholder="Seu Nome (opcional)" style="padding:8px; width:80%; border:1px solid #ccc; border-radius:4px; margin-bottom:0.5rem;">
+                    <input type="text" id="customer-name" placeholder="Seu Nome (opcional)" style="padding:8px; width:100%; border:1px solid #ccc; border-radius:4px; margin-bottom:0.5rem; box-sizing: border-box;">
                 </div>
                 <div style="margin-top:0.5rem;">
-                    <button type="button" id="btn-confirmar-agendamento" class="btn btn-primary btn-sm" disabled>Confirmar agendamento</button>
+                    <button type="button" id="btn-confirmar-agendamento" class="btn btn-sm btn-primary" disabled style="width: 100%; padding: 0.8rem; font-weight: bold;">Confirmar agendamento</button>
                 </div>
             `;
             modal.querySelector(".modal-content").appendChild(seletor);
@@ -303,8 +311,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function fazerReserva(dia, horario, servico, ano, mes, name) {
         // Confirmação removida conforme pedido (o clique no botão já serve de confirmação)
-        // if (!confirm(`Confirmar agendamento para dia ${dia} às ${horario} (${servico})?`)) return;
-
+        
         const diaStr = String(dia).padStart(2, '0');
         const mesStr = String(mes).padStart(2, '0');
         
@@ -318,53 +325,74 @@ document.addEventListener("DOMContentLoaded", () => {
         fetch("/reservar", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({dia: dia, horario: horario, service: servico, ano: ano, mes: mes, customer_name: name})
+            body: JSON.stringify({
+                dia: dia, 
+                horario: horario, 
+                service: servico, 
+                ano: ano, 
+                mes: mes, 
+                customer_name: name
+            })
         }).then(r => r.json()).then(res => {
             if(res.success){
-                // Mostra mensagem de sucesso e opção de WhatsApp no Modal
-                const modalContent = modal.querySelector(".modal-content");
+                // Fecha modal de horários
+                if(modal) modal.style.display = 'none';
                 
-                let msg = `Olá! Acabei de agendar um horário:\nData: ${diaStr}/${mesStr}/${ano}\nHorário: ${horario}\nServiço: ${servico}`;
-                if (name) {
-                    msg += `\nCliente: ${name}`;
-                }
-                // Número do barbeiro configurado
-                const numeroBarbeiro = "5517996673513";
-                const waLink = `https://wa.me/${numeroBarbeiro}?text=${encodeURIComponent(msg)}`;
+                // Abre modal de sucesso
+                const modalSucesso = document.getElementById("modalSucesso");
+                if (modalSucesso) {
+                    modalSucesso.style.display = "block";
 
-                // Redireciona automaticamente para o WhatsApp em nova aba após breve delay
-                setTimeout(() => {
-                   window.open(waLink, '_blank');
-                }, 1500);
-
-                modalContent.innerHTML = `
-                    <div style="text-align: center;">
-                        <div style="font-size: 3rem; color: #4caf50; margin-bottom: 1rem;">✅</div>
-                        <h2 style="color: #2e7d32; margin-top:0;">Agendamento Confirmado!</h2>
-                        <p>Seu horário foi reservado com sucesso.</p>
-                        <p><strong>${diaStr}/${mesStr}/${ano} às ${horario}</strong></p>
-                        <p>${servico}</p>
-                        <p style="color:#666; font-size:0.9rem; margin-top:1rem;">Você será redirecionado para o WhatsApp do barbeiro...</p>
-                        <div style="margin-top: 1.5rem;">
-                            <a href="${waLink}" target="_blank" class="btn btn-whatsapp" style="text-decoration:none; display:inline-block; padding:0.8rem 1.2rem; border-radius:999px; background:#25D366; color:white; font-weight:bold;">
-                                Comunicar Barbeiro
-                            </a>
-                        </div>
-                        <button class="btn btn-secondary" style="margin-top: 1rem;" onclick="location.reload()">Fechar</button>
-                    </div>
-                `;
-            } else {
-                if (res.error === 'login_required') {
-                    showToast("Você precisa fazer login.", "error");
-                    setTimeout(() => window.location.href = "/login", 1500);
-                } else if (res.error === 'slot_taken') {
-                    showToast("Este horário acabou de ser ocupado. Tente outro.", "error");
-                    setTimeout(() => location.reload(), 1500);
+                    // Automação WhatsApp e Botão
+                    const agendaPage = document.getElementById("agenda-page");
+                    const shopPhone = agendaPage ? agendaPage.dataset.shopPhone : "";
+                    const btnWhatsapp = document.getElementById("btn-whatsapp-confirm");
+                    
+                    if (shopPhone && shopPhone.length > 5) {
+                         const prefix = shopPhone.startsWith('55') ? '' : '55';
+                         const cleanPhone = shopPhone.replace(/\D/g, '');
+                         
+                         let msg = `Olá! Acabei de agendar um horário:\nData: ${diaStr}/${mesStr}/${ano}\nHorário: ${horario}\nServiço: ${servico}`;
+                         if (name) msg += `\nCliente: ${name}`;
+                         
+                         const waUrl = `https://wa.me/${prefix}${cleanPhone}?text=${encodeURIComponent(msg)}`;
+                         
+                         // Configura e exibe o botão
+                         if (btnWhatsapp) {
+                             btnWhatsapp.href = waUrl;
+                             btnWhatsapp.style.display = "inline-flex";
+                         }
+                         
+                         // Tenta abrir automaticamente
+                         setTimeout(() => {
+                             window.open(waUrl, '_blank');
+                         }, 500);
+                    } else {
+                        // Se não tiver telefone configurado, esconde o botão
+                        if (btnWhatsapp) {
+                            btnWhatsapp.style.display = "none";
+                        }
+                    }
                 } else {
-                    showToast("Erro: " + res.error, "error");
+                    // Fallback se não tiver modal de sucesso
+                    window.showToast("Agendamento realizado com sucesso!");
+                    setTimeout(() => window.location.reload(), 1500);
+                }
+            } else {
+                window.showToast("Erro: " + (res.error || "Horário indisponível"), "error");
+                if(btn) {
+                    btn.disabled = false;
+                    btn.textContent = "Confirmar agendamento";
                 }
             }
-        }).catch(() => showToast("Erro na requisição", "error"));
+        }).catch(err => {
+            console.error(err);
+            window.showToast("Erro de comunicação", "error");
+            if(btn) {
+                btn.disabled = false;
+                btn.textContent = "Confirmar agendamento";
+            }
+        });
     }
 
     // --- Fim Agenda Barbeiro (/agenda) ---

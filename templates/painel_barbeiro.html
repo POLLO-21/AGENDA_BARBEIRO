@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Painel do Barbeiro{% endblock %}
+{% block title %}Barber Calendar - Painel{% endblock %}
 {% block content %}
 <main class="container mt-4" id="painel-barbeiro" data-ano="{{ ano }}" data-mes="{{ mes }}">
   <section>
@@ -8,11 +8,14 @@
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
             <h3 style="margin:0; color:#4caf50;">Agendamentos de Hoje ({{ agendamentos_hoje|length }})</h3>
             <div style="display:flex; gap:0.5rem;">
+                <input type="hidden" id="shop-slug-data" value="{{ session.get('barbershop_slug', '') }}">
                 <button id="btn-share-whatsapp" class="btn btn-whatsapp" data-agenda-url="{{ url_for('agenda') }}" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
-                  Compartilhar Link
+                  Compartilhar Link da Agenda
                 </button>
             </div>
           </div>
+          
+<!-- Link removido -->
 
           {% if agendamentos_hoje %}
             <div class="appointments-grid">
@@ -23,9 +26,6 @@
                         <span class="time">{{ ag.time }}</span>
                         <span class="client-name">{{ ag.cliente }}</span>
                     </div>
-                    {% if ag.phone %}
-                        <span class="client-phone">{{ ag.phone }}</span>
-                    {% endif %}
                   </div>
                   <div class="appointment-actions">
                     <span class="tag-service">{{ ag.service }}</span>

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Selecionar Barbearia{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 600px; margin: 2rem auto; text-align: center;">
+    <h1>Bem-vindo ao Barber Calendar</h1>
+    <p style="color: #666; margin-bottom: 2rem;">Selecione uma barbearia para continuar:</p>
+
+    <div class="shop-list" style="display: flex; flex-direction: column; gap: 1rem;">
+        {% for shop in shops %}
+        <a href="{{ url_for('selecionar_loja', shop_id=shop.id) }}" class="shop-card" style="
+            display: block;
+            padding: 1.5rem;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #333;
+            transition: transform 0.2s, box-shadow 0.2s;
+        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'"
+          onmouseout="this.style.transform='none'; this.style.boxShadow='none'">
+            <h2 style="margin: 0; font-size: 1.2rem; color: #2c3e50;">{{ shop.name }}</h2>
+        </a>
+        {% else %}
+        <p>Nenhuma barbearia cadastrada.</p>
+        <div style="margin-top: 2rem;">
+            <a href="{{ url_for('register_barber') }}" class="btn btn-primary">Cadastrar minha barbearia</a>
+        </div>
+        {% endfor %}
+    </div>
+    
+    {% if shops %}
+    <div style="margin-top: 3rem; border-top: 1px solid #eee; padding-top: 1.5rem;">
+        <p style="font-size: 0.9rem;">É um barbeiro?</p>
+        <a href="{{ url_for('register_barber') }}" class="btn btn-secondary">Cadastrar nova barbearia</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

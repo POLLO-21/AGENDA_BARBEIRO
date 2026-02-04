@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block header_title %}Painel Gerente{% endblock %}
+
+{% block content %}
+<main>
+    <section>
+        <header style="border-bottom: 2px solid #eee; padding-bottom: 1rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h2 style="margin: 0; border: none; padding: 0;">Painel Gerente</h2>
+                <p style="margin: 0.5rem 0 0; color: #666;">Gestão global do sistema</p>
+            </div>
+            <div style="background: #222; color: #fff; padding: 1rem 1.5rem; border-radius: 8px; text-align: center; min-width: 150px;">
+                <span style="display: block; font-size: 0.9rem; opacity: 0.8;">Total de Barbearias</span>
+                <span style="display: block; font-size: 2rem; font-weight: bold;">{{ shops|length }}</span>
+            </div>
+        </header>
+
+        <div class="table-responsive" style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
+                <thead>
+                    <tr style="background: #f8f9fa; color: #555; text-align: left;">
+                        <th style="padding: 1rem; font-weight: 600; border-bottom: 2px solid #eee;">ID</th>
+                        <th style="padding: 1rem; font-weight: 600; border-bottom: 2px solid #eee;">Nome</th>
+                        <th style="padding: 1rem; font-weight: 600; border-bottom: 2px solid #eee;">Link de Acesso</th>
+                        <th style="padding: 1rem; font-weight: 600; border-bottom: 2px solid #eee; text-align: center;">Barbeiros</th>
+                        <th style="padding: 1rem; font-weight: 600; border-bottom: 2px solid #eee; text-align: center;">Agendamentos (Mês)</th>
+                        <th style="padding: 1rem; font-weight: 600; border-bottom: 2px solid #eee; text-align: right;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for shop in shops %}
+                    <tr style="border-bottom: 1px solid #eee; transition: background 0.2s;">
+                        <td style="padding: 1rem; color: #666;">#{{ shop.id }}</td>
+                        <td style="padding: 1rem; font-weight: 500;">{{ shop.name }}</td>
+                        <td style="padding: 1rem;">
+                            <a href="{{ url_for('selecionar_loja_slug', slug=shop.slug) }}" target="_blank" style="color: #007bff; text-decoration: none; font-weight: 500;">
+                                /{{ shop.slug }} &#8599;
+                            </a>
+                        </td>
+                        <td style="padding: 1rem; text-align: center;">
+                            <span style="background: #e9ecef; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.85rem; font-weight: 600; color: #555;">
+                                {{ shop.barbers_count }}
+                            </span>
+                        </td>
+                        <td style="padding: 1rem; text-align: center;">
+                            <span style="background: #e3f2fd; color: #0d47a1; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.85rem; font-weight: 600;">
+                                {{ shop.bookings_count }}
+                            </span>
+                        </td>
+                        <td style="padding: 1rem; text-align: right;">
+                            <a href="{{ url_for('admin_barbershop_details', shop_id=shop.id) }}" style="background: #222; color: #fff; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-size: 0.9rem; text-decoration: none;">
+                                Detalhes
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    
+                    {% if not shops %}
+                    <tr>
+                        <td colspan="6" style="padding: 3rem; text-align: center; color: #999;">
+                            Nenhuma barbearia cadastrada.
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+{% endblock %}

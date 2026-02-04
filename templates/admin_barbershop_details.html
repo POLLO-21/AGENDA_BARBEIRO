@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block header_title %}Detalhes da Barbearia{% endblock %}
+
+{% block content %}
+<main>
+    <section>
+        <header style="border-bottom: 2px solid #eee; padding-bottom: 1rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <a href="{{ url_for('admin_dashboard') }}" class="btn-back-icon" title="Voltar ao Painel">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                </a>
+                <h2 style="margin: 0.5rem 0 0; border: none; padding: 0;">{{ shop.name }}</h2>
+                <p style="margin: 0.5rem 0 0; color: #666;">Gerenciar dados da barbearia</p>
+            </div>
+            <div>
+                 <form action="{{ url_for('admin_delete_barbershop', shop_id=shop.id) }}" method="POST" onsubmit="return confirm('Tem certeza? Isso apagará TODOS os dados, agendamentos e usuários desta barbearia permanentemente.')">
+                    <button type="submit" style="background: #dc3545; color: #fff; padding: 0.8rem 1.2rem; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                        Excluir
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        {% if erro %}
+        <div style="background: #f8d7da; color: #721c24; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+            {{ erro }}
+        </div>
+        {% endif %}
+
+        <form method="POST">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start;">
+                <!-- Form de Edição da Barbearia -->
+                <div class="card">
+                    <h3 style="margin-top: 0;">Editar Informações</h3>
+                    
+                    <label style="display:block; margin-bottom:0.4rem; color:#444; font-weight:500;">Nome da Barbearia</label>
+                    <input type="text" name="name" value="{{ shop.name }}" required style="width:100%; box-sizing:border-box; padding:0.75rem; margin-bottom:1.5rem; border:1px solid #ddd; border-radius:4px;">
+                    
+                    <label style="display:block; margin-bottom:0.4rem; color:#444; font-weight:500;">Slug (URL)</label>
+                    <input type="text" name="slug" value="{{ shop.slug }}" required style="width:100%; box-sizing:border-box; padding:0.75rem; margin-bottom:1.5rem; border:1px solid #ddd; border-radius:4px;">
+                    
+                    <label style="display:block; margin-bottom:0.4rem; color:#444; font-weight:500;">Telefone / WhatsApp (Para agendamentos)</label>
+                    <input type="text" name="phone" value="{{ shop.phone or '' }}" placeholder="+55 11 99999-9999" style="width:100%; box-sizing:border-box; padding:0.75rem; margin-bottom:0.5rem; border:1px solid #ddd; border-radius:4px;">
+                    <p style="font-size: 0.8rem; color: #777; margin-top: 0; margin-bottom: 0.8rem;">
+                        <small>Este número receberá as mensagens de confirmação de agendamento.</small>
+                    </p>
+                </div>
+
+                <!-- Dados de Acesso e Usuários -->
+                <div style="display: flex; flex-direction: column; gap: 2rem;">
+                    {% if main_user %}
+                    <div class="card">
+                        <h3 style="margin-top: 0;">Dados de Acesso (Barbeiro)</h3>
+                        
+                        <label style="display:block; margin-bottom:0.4rem; color:#444; font-weight:500;">Usuário</label>
+                        <input type="text" name="username" value="{{ main_user.username }}" required style="width:100%; box-sizing:border-box; padding:0.75rem; margin-bottom:1.5rem; border:1px solid #ddd; border-radius:4px;">
+                        
+                        <label style="display:block; margin-bottom:0.4rem; color:#444; font-weight:500;">Senha</label>
+                        <input type="text" name="password" placeholder="Nova senha (opcional)" style="width:100%; box-sizing:border-box; padding:0.75rem; margin-bottom:0.5rem; border:1px solid #ddd; border-radius:4px;">
+                        <p style="font-size: 0.85rem; color: #777; margin: 0;">
+                            <small>Por segurança, a senha atual é criptografada e não pode ser exibida. Preencha acima apenas se desejar <strong>alterar</strong> a senha.</small>
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    <!-- Lista de Usuários Vinculados -->
+                    <div class="card">
+                        <h3 style="margin-top: 0;">Usuários Vinculados</h3>
+                        {% if users %}
+                        <ul style="list-style: none; padding: 0; margin: 0;">
+                            {% for u in users if u.role == 'barbeiro' %}
+                            <li style="border-bottom: 1px solid #eee; padding: 1rem 0; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong style="display: block;">{{ u.username }}</strong>
+                                    <span style="font-size: 0.9rem; color: #666;">{{ u.role }}</span>
+                                    {% if u.email %}
+                                    <span style="display: block; font-size: 0.85rem; color: #888;">{{ u.email }}</span>
+                                    {% endif %}
+                                </div>
+                                <span style="background: #eee; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.8rem;">
+                                    ID: {{ u.id }}
+                                </span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p style="color: #666;">Nenhum usuário encontrado nesta barbearia.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit" style="width:100%; background:#222; color:#fff; border:none; padding:1rem; border-radius:4px; font-weight:bold; cursor:pointer; margin-top: 2rem;">
+                Salvar Alterações
+            </button>
+        </form>
+    </section>
+</main>
+{% endblock %}

@@ -3,7 +3,12 @@
 {% block content %}
 <main class="container mt-4">
   <section>
-  <h2 class="mb-3">Editar Dia {{ dia.numero }}</h2>
+  <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+      <a href="{{ url_for('painel_barbeiro', mes=dia.mes, ano=dia.ano) }}" class="btn-back-icon" title="Voltar ao Painel">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      </a>
+      <h2 style="margin: 0;">Editar Dia {{ dia.numero }}</h2>
+  </div>
   <h3>Horários deste dia</h3>
   
   {% if not slots %}
@@ -14,93 +19,101 @@
       <div class="horarios-columns">
         <!-- Coluna Manhã -->
         <div class="horarios-column">
-          <h4>Manhã</h4>
+          <h4 class="column-title">Manhã</h4>
           <ul class="lista-horarios-admin">
             {% for slot in slots if slot.time < '12:00' %}
-            <li>
-                <div class="slot-info">
-                    <strong class="slot-time">{{ slot.time }}</strong> 
+            <li class="slot-card">
+                <div class="slot-header">
+                    <span class="slot-time">{{ slot.time }}</span>
                     {% if slot.available %}
-                      <span class="status-ativo">(Ativo)</span>
+                      <span class="status-dot available" title="Ativo"></span>
                     {% else %}
-                      <span class="status-inativo">(Inativo/Ocupado)</span>
+                      <span class="status-dot unavailable" title="Ocupado/Inativo"></span>
                     {% endif %}
                 </div>
-                <div class="editar-dia-actions">
-                    <a href="{{ url_for('editar_horario', horario_id=slot.id) }}" class="btn btn-sm btn-primary">Editar</a>
-                    
+                <div class="slot-actions">
                     {% if slot.is_taken %}
-                        <form action="{{ url_for('liberar_horario_dia') }}" method="POST" style="display:inline;">
+                        <form action="{{ url_for('liberar_horario_dia') }}" method="POST">
                             <input type="hidden" name="day" value="{{ dia.raw_numero }}">
                             <input type="hidden" name="time" value="{{ slot.time }}">
                             <input type="hidden" name="month" value="{{ dia.mes }}">
                             <input type="hidden" name="year" value="{{ dia.ano }}">
                             <input type="hidden" name="slot_id" value="{{ slot.id }}">
-                            <button type="submit" class="btn btn-sm btn-info" style="color:white;">Liberar</button>
+                            <button type="submit" class="icon-btn release" title="Liberar Horário">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                            </button>
                         </form>
                     {% elif not slot.active %}
-                        <form action="{{ url_for('ativar_horario', horario_id=slot.id) }}" method="POST" style="display:inline;">
-                            <button type="submit" class="btn btn-sm btn-success">Ativar</button>
+                        <form action="{{ url_for('ativar_horario', horario_id=slot.id) }}" method="POST">
+                            <button type="submit" class="icon-btn activate" title="Ativar">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            </button>
                         </form>
                     {% else %}
-                        <form action="{{ url_for('excluir_horario', horario_id=slot.id) }}" method="POST" style="display:inline;">
-                            <button type="submit" class="btn btn-sm btn-danger">Desativar</button>
+                        <form action="{{ url_for('excluir_horario', horario_id=slot.id) }}" method="POST">
+                            <button type="submit" class="icon-btn delete" title="Desativar">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            </button>
                         </form>
                     {% endif %}
                 </div>
             </li>
             {% else %}
-            <li style="font-style:italic; color:#777;">Sem horários de manhã.</li>
+            <li class="empty-msg">Sem horários de manhã.</li>
             {% endfor %}
           </ul>
         </div>
 
         <!-- Coluna Tarde -->
         <div class="horarios-column">
-          <h4>Tarde</h4>
+          <h4 class="column-title">Tarde</h4>
           <ul class="lista-horarios-admin">
             {% for slot in slots if slot.time >= '12:00' %}
-            <li>
-                <div class="slot-info">
-                    <strong class="slot-time">{{ slot.time }}</strong> 
+            <li class="slot-card">
+                <div class="slot-header">
+                    <span class="slot-time">{{ slot.time }}</span>
                     {% if slot.available %}
-                      <span class="status-ativo">(Ativo)</span>
+                      <span class="status-dot available" title="Ativo"></span>
                     {% else %}
-                      <span class="status-inativo">(Inativo/Ocupado)</span>
+                      <span class="status-dot unavailable" title="Ocupado/Inativo"></span>
                     {% endif %}
                 </div>
-                <div class="editar-dia-actions">
-                    <a href="{{ url_for('editar_horario', horario_id=slot.id) }}" class="btn btn-sm btn-primary">Editar</a>
-                    
+                <div class="slot-actions">
                     {% if slot.is_taken %}
-                        <form action="{{ url_for('liberar_horario_dia') }}" method="POST" style="display:inline;">
+                        <form action="{{ url_for('liberar_horario_dia') }}" method="POST">
                             <input type="hidden" name="day" value="{{ dia.raw_numero }}">
                             <input type="hidden" name="time" value="{{ slot.time }}">
                             <input type="hidden" name="month" value="{{ dia.mes }}">
                             <input type="hidden" name="year" value="{{ dia.ano }}">
                             <input type="hidden" name="slot_id" value="{{ slot.id }}">
-                            <button type="submit" class="btn btn-sm btn-info" style="color:white;">Liberar</button>
+                            <button type="submit" class="icon-btn release" title="Liberar Horário">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                            </button>
                         </form>
                     {% elif not slot.active %}
-                        <form action="{{ url_for('ativar_horario', horario_id=slot.id) }}" method="POST" style="display:inline;">
-                            <button type="submit" class="btn btn-sm btn-success">Ativar</button>
+                        <form action="{{ url_for('ativar_horario', horario_id=slot.id) }}" method="POST">
+                            <button type="submit" class="icon-btn activate" title="Ativar">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            </button>
                         </form>
                     {% else %}
-                        <form action="{{ url_for('excluir_horario', horario_id=slot.id) }}" method="POST" style="display:inline;">
-                            <button type="submit" class="btn btn-sm btn-danger">Desativar</button>
+                        <form action="{{ url_for('excluir_horario', horario_id=slot.id) }}" method="POST">
+                            <button type="submit" class="icon-btn delete" title="Desativar">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            </button>
                         </form>
                     {% endif %}
                 </div>
             </li>
             {% else %}
-            <li style="font-style:italic; color:#777;">Sem horários à tarde.</li>
+            <li class="empty-msg">Sem horários à tarde.</li>
             {% endfor %}
           </ul>
         </div>
       </div>
   {% endif %}
 
-  <div class="editar-dia-footer" style="flex-wrap: wrap; gap: 10px;">
+  <div class="editar-dia-footer">
     {% if not slots or not dia.disponivel %}
     <form action="{{ url_for('restaurar_dia', dia_id=dia.raw_numero, mes=dia.mes, ano=dia.ano) }}" method="POST">
         <button type="submit" class="btn btn-success">Restaurar Horários Padrão</button>
@@ -110,7 +123,6 @@
     <form action="{{ url_for('excluir_dia', dia_id=dia.raw_numero, mes=dia.mes, ano=dia.ano) }}" method="POST" onsubmit="return confirm('Tem certeza? Isso desativará todos os horários deste dia.');">
         <button type="submit" class="btn btn-danger">Excluir Dia Inteiro (Desativar Tudo)</button>
     </form>
-    <a href="{{ url_for('painel_barbeiro', mes=dia.mes, ano=dia.ano) }}" class="btn btn-secondary">Voltar ao Painel</a>
   </div>
   </section>
 </main>
