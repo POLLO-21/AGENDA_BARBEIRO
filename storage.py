@@ -144,6 +144,8 @@ def init_db():
         cur.execute("ALTER TABLE barbershops ADD COLUMN phone TEXT")
     if "address" not in bcols:
         cur.execute("ALTER TABLE barbershops ADD COLUMN address TEXT")
+    if "active" not in bcols:
+        cur.execute("ALTER TABLE barbershops ADD COLUMN active INTEGER DEFAULT 1")
 
     cur.execute("PRAGMA table_info(users)")
     ucols = [r["name"] for r in cur.fetchall()]
@@ -256,6 +258,17 @@ def update_barbershop(shop_id, name, slug, phone, address):
     cur.execute("UPDATE barbershops SET name=?, slug=?, phone=?, address=? WHERE id=?", 
                 (name, slug, phone, address, shop_id))
     conn.commit()
+    conn.close()
+
+def toggle_barbershop_status(shop_id):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT active FROM barbershops WHERE id=?", (shop_id,))
+    row = cur.fetchone()
+    if row:
+        new_status = 0 if row["active"] else 1
+        cur.execute("UPDATE barbershops SET active=? WHERE id=?", (new_status, shop_id))
+        conn.commit()
     conn.close()
 
 def get_users_by_barbershop(shop_id):

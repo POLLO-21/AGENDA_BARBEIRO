@@ -11,9 +11,25 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
                 </a>
                 <h2 style="margin: 0.5rem 0 0; border: none; padding: 0;">{{ shop.name }}</h2>
-                <p style="margin: 0.5rem 0 0; color: #666;">Gerenciar dados da barbearia</p>
+                <p style="margin: 0.5rem 0 0; color: #666;">
+                    Gerenciar dados da barbearia
+                    {% if shop.active == 0 %}
+                    <span style="background: #e74c3c; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-left: 0.5rem; vertical-align: middle;">INATIVA</span>
+                    {% endif %}
+                </p>
             </div>
-            <div>
+            <div style="display: flex; gap: 0.5rem;">
+                <form action="{{ url_for('admin_toggle_barbershop_status', shop_id=shop.id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja alterar o status desta barbearia?')">
+                    {% if shop.active == 0 %}
+                        <button type="submit" style="background: #28a745; color: #fff; padding: 0.8rem 1.2rem; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                            Ativar
+                        </button>
+                    {% else %}
+                        <button type="submit" style="background: #ffc107; color: #333; padding: 0.8rem 1.2rem; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                            Desativar
+                        </button>
+                    {% endif %}
+                </form>
                  <form action="{{ url_for('admin_delete_barbershop', shop_id=shop.id) }}" method="POST" onsubmit="return confirm('Tem certeza? Isso apagará TODOS os dados, agendamentos e usuários desta barbearia permanentemente.')">
                     <button type="submit" style="background: #dc3545; color: #fff; padding: 0.8rem 1.2rem; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
                         Excluir

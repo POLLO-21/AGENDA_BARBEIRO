@@ -599,6 +599,14 @@ def admin_delete_barbershop(shop_id):
     storage.delete_barbershop(shop_id)
     return redirect(url_for("admin_dashboard"))
 
+@app.route("/admin/barbershop/<int:shop_id>/toggle_status", methods=["POST"])
+def admin_toggle_barbershop_status(shop_id):
+    if "user_id" not in session or session.get("role") != "admin":
+        return redirect(url_for("login"))
+        
+    storage.toggle_barbershop_status(shop_id)
+    return redirect(url_for("admin_barbershop_details", shop_id=shop_id))
+
 @app.route("/setup_admin_secret_123")
 def setup_admin():
     # Rota secreta temporária para criar o primeiro admin

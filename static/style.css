@@ -520,3 +520,173 @@ h2 {
     color: #fff;
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
+
+/* Success Modal Buttons */
+.btn-whatsapp-confirm {
+    background: #25D366;
+    color: #fff;
+    padding: 0.8rem 2rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    margin-bottom: 1rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-width: 200px;
+    display: inline-flex;
+}
+
+.btn-modal-close {
+    background: #222;
+    color: #fff;
+    border: none;
+    padding: 0.8rem 2rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 200px;
+}
+
+/* Mobile & Responsive Adaptations */
+@media (max-width: 768px) {
+    /* Global Container Adjustments */
+    section {
+        padding: 1rem;
+        margin: 0.5rem;
+        width: auto;
+        border-radius: 8px;
+    }
+    
+    main {
+        padding: 0.5rem;
+    }
+
+    /* Typography Improvements for Mobile */
+    body {
+        font-size: 16px; /* Base size for readability */
+        line-height: 1.5;
+    }
+    
+    h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.25rem; }
+    p, label, li { font-size: 1rem; }
+
+    /* Header Adjustments */
+    header {
+        padding: 0.8rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .header-actions {
+        position: static;
+        transform: none;
+        width: 100%;
+        justify-content: center;
+        margin-top: 0.5rem;
+    }
+
+    /* Form Elements & Inputs - Touch Friendly */
+    input[type="text"],
+    input[type="password"],
+    input[type="email"],
+    input[type="tel"],
+    select, 
+    button, 
+    .btn,
+    .styled-select {
+        min-height: 48px; /* Easier to tap */
+        font-size: 1rem;
+    }
+
+    /* Stack Forms */
+    .month-selector-form {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .styled-select {
+        width: 100%;
+    }
+
+    /* Calendar Grid for Small Screens */
+    .calendario {
+        gap: 2px;
+    }
+    
+    .dia {
+        min-height: 60px;
+        padding: 2px;
+        font-size: 0.8rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+    }
+    
+    .calendario-header {
+        font-size: 0.8rem;
+    }
+
+    /* Login & Card Containers */
+    .login-container {
+        width: auto;
+        margin: 1rem;
+        padding: 1.5rem;
+    }
+
+    /* Button Full Width on Mobile */
+    .btn-full-mobile, 
+    form button[type="submit"],
+    .login-container button,
+    .btn-whatsapp-confirm,
+    .btn-modal-close {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        margin-top: 0.5rem;
+        box-sizing: border-box;
+    }
+    
+    /* Admin Grid Adjustments */
+    .appointments-grid {
+        grid-template-columns: 1fr; /* 1 column */
+    }
+    
+    .horarios-columns {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .lista-horarios-admin {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+}
+
+@media (max-width: 480px) {
+    /* Extra adjustments for very small screens */
+    .header-pill-btn {
+        padding: 0.5rem;
+        font-size: 0.85rem;
+    }
+    
+    .icon-button {
+        width: 40px;
+        height: 40px; /* Larger touch target */
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 10% auto;
+    }
+    
+    .dia {
+        min-height: 50px;
+    }
+}
