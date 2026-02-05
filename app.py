@@ -342,7 +342,12 @@ def perfil():
         return redirect(url_for("login"))
         
     user_id = session["user_id"]
-    u = storage.get_user_by_id(user_id)
+    u_row = storage.get_user_by_id(user_id)
+    if not u_row:
+        session.clear()
+        return redirect(url_for("login"))
+    # Converter para dict para permitir uso de .get() e evitar erros de sqlite3.Row
+    u = dict(u_row)
     erro = None
     
     if request.method == "POST":
@@ -389,7 +394,7 @@ def perfil():
     
     # Carregar dados da barbearia se existir
     shop_data = None
-    if u["barbershop_id"]:
+    if u.get("barbershop_id"):
         shop_data = storage.get_barbershop(u["barbershop_id"])
 
     return render_template("perfil.html", usuario=u, shop=shop_data, erro=erro, role=role)
