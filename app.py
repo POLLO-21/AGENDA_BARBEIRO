@@ -13,19 +13,22 @@ storage.init_db()
 
 @app.route("/")
 def home():
-    if session.get("role") == "barbeiro":
-        return redirect(url_for("painel_barbeiro"))
+    # Se estiver logado, redireciona conforme o papel
+    if session.get("user_id"):
+        if session.get("role") == "admin":
+            return redirect(url_for("admin_dashboard"))
+        elif session.get("role") == "barbeiro":
+            return redirect(url_for("painel_barbeiro"))
+        else:
+            return redirect(url_for("agenda"))
     
-    # Se já tem barbearia na sessão, vai para agenda
-    if session.get("barbershop_id"):
-        return redirect(url_for("agenda"))
-
-    # Caso contrário, lista as barbearias disponíveis
-    shops = storage.get_barbershops()
-    return render_template("selecionar_barbearia.html", shops=shops)
+    # Se não estiver logado, vai para a tela de login
+    return redirect(url_for("login"))
 
 @app.route("/selecionar_loja/<int:shop_id>")
 def selecionar_loja(shop_id):
+    # Rota mantida apenas para compatibilidade interna, se necessário
+    # Mas o acesso direto não deve ser encorajado publicamente
     shop = storage.get_barbershop(shop_id)
     if shop:
         session["barbershop_id"] = shop["id"]
