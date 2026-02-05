@@ -26,7 +26,18 @@
                 <div class="slot-header">
                     <span class="slot-time">{{ slot.time }}</span>
                     {% if slot.is_taken %}
-                        <span class="badge-booked">Reservado</span>
+                        {% set booking = bookings_map.get(slot.time) %}
+                        <div class="booking-info" style="text-align: right;">
+                            <span class="badge-booked">Reservado</span>
+                            {% if booking %}
+                            <div class="client-name" style="font-size: 0.85rem; font-weight: 600; color: #2c3e50; margin-top: 2px;">
+                                {{ booking.client_name }}
+                            </div>
+                            <div class="service-name" style="font-size: 0.75rem; color: #666;">
+                                {{ booking.service }}
+                            </div>
+                            {% endif %}
+                        </div>
                     {% elif slot.available %}
                       <span class="status-dot available" title="Ativo"></span>
                     {% else %}
@@ -75,7 +86,18 @@
                 <div class="slot-header">
                     <span class="slot-time">{{ slot.time }}</span>
                     {% if slot.is_taken %}
-                        <span class="badge-booked">Reservado</span>
+                        {% set booking = bookings_map.get(slot.time) %}
+                        <div class="booking-info" style="text-align: right;">
+                            <span class="badge-booked">Reservado</span>
+                            {% if booking %}
+                            <div class="client-name" style="font-size: 0.85rem; font-weight: 600; color: #2c3e50; margin-top: 2px;">
+                                {{ booking.client_name }}
+                            </div>
+                            <div class="service-name" style="font-size: 0.75rem; color: #666;">
+                                {{ booking.service }}
+                            </div>
+                            {% endif %}
+                        </div>
                     {% elif slot.available %}
                       <span class="status-dot available" title="Ativo"></span>
                     {% else %}
@@ -117,17 +139,15 @@
       </div>
   {% endif %}
 
-  <div class="editar-dia-footer">
-    {% if not slots or not dia.disponivel %}
-    <form action="{{ url_for('restaurar_dia', dia_id=dia.raw_numero, mes=dia.mes, ano=dia.ano) }}" method="POST">
-        <button type="submit" class="btn btn-success">Restaurar Horários Padrão</button>
-    </form>
-    {% endif %}
-
-    <form action="{{ url_for('excluir_dia', dia_id=dia.raw_numero, mes=dia.mes, ano=dia.ano) }}" method="POST">
-        <button type="submit" class="btn btn-danger">Excluir Dia Inteiro (Desativar Tudo)</button>
-    </form>
-  </div>
+  <div class="day-actions">
+                <form action="{{ url_for('restaurar_dia', dia_id=dia.raw_numero, mes=dia.mes, ano=dia.ano) }}" method="POST" style="display:inline;">
+                    <button type="submit" class="btn btn-success btn-sm">Restaurar Horários Padrão</button>
+                </form>
+                
+                <form action="{{ url_for('excluir_dia', dia_id=dia.raw_numero, mes=dia.mes, ano=dia.ano) }}" method="POST" style="display:inline;">
+                    <button type="submit" class="btn btn-danger btn-sm">Excluir Dia Inteiro (Desativar Tudo)</button>
+                </form>
+            </div>
   </section>
 </main>
 {% endblock %}

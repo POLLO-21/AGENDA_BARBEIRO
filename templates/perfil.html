@@ -20,17 +20,21 @@
                         <input type="text" name="usuario" value="{{ usuario['username'] }}" placeholder="Seu usuário" class="form-control">
                     </div>
 
+                    {% if role != 'admin' %}
                     <div class="form-group">
                         <label>Nome da Barbearia</label>
                         <input type="text" name="barbearia" value="{{ usuario['barbearia_nome'] or '' }}" placeholder="Nome do estabelecimento" class="form-control">
                     </div>
+                    {% endif %}
                 </div>
                 
+                {% if role != 'admin' %}
                 <div class="form-group">
                     <label>Telefone (WhatsApp)</label>
                     <input type="text" name="phone" value="{{ shop['phone'] if shop else '' }}" placeholder="Ex: 5511999999999" class="form-control">
                     <small style="color: #666; font-size: 0.85rem;">Este número receberá as mensagens de confirmação.</small>
                 </div>
+                {% endif %}
 
                 <!-- Alteração de Senha -->
                 <div style="margin-top: 1.5rem; border-top: 1px solid #eee; padding-top: 1.5rem;">
@@ -57,7 +61,7 @@
                 <button type="submit" class="btn btn-primary btn-block">Salvar Alterações</button>
                 
                 <div style="margin-top: 1rem; text-align: center;">
-                    <a href="{{ url_for('agenda') }}" class="btn-text">Voltar para a Agenda</a>
+                    <a href="{{ url_for('admin_dashboard') if role == 'admin' else url_for('painel_barbeiro') }}" class="btn-text">Voltar para o Painel</a>
                 </div>
             </div>
         </form>

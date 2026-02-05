@@ -163,6 +163,7 @@ def init_db():
     cur.execute("CREATE INDEX IF NOT EXISTS idx_users_shop ON users(barbershop_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_avail_shop ON availability(barbershop_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_avail_date ON availability(year, month, day)")
+    cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_avail_unique ON availability(day, month, year, time, barber_id, barbershop_id)")
 
     # Criar barbearia padrão se não existir
     cur.execute("SELECT COUNT(*) c FROM barbershops")
@@ -182,6 +183,13 @@ def init_db():
         cur.execute("UPDATE bookings SET month=? WHERE month IS NULL", (now.month,))
         conn.commit()
     
+    # Criar admin padrão se não existir
+    cur.execute("SELECT COUNT(*) c FROM users WHERE role='admin'")
+    if cur.fetchone()["c"] == 0:
+        pwd_hash = generate_password_hash("admin123")
+        cur.execute("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)", ("admin", pwd_hash, "admin"))
+        conn.commit()
+
     conn.close()
     
     # Run migration in a separate connection to avoid locking issues if any
@@ -418,7 +426,7 @@ def ensure_daily_slots(conn, day, month, year, barber_id, barbershop_id=None):
         # Se não existe, cria os slots padrão
         times = generate_default_times()
         for t in times:
-            insert_sql = "INSERT INTO availability(day, month, year, time, active, barber_id, barbershop_id) VALUES(?, ?, ?, ?, 1, ?, ?)"
+            insert_sql = "INSERT OR IGNORE INTO availability(day, month, year, time, active, barber_id, barbershop_id) VALUES(?, ?, ?, ?, 1, ?, ?)"
             cur.execute(insert_sql, (day, month, year, t, barber_id, barbershop_id))
         conn.commit()
 
@@ -555,7 +563,7 @@ def get_bookings_by_day_with_usernames(day, year=None, month=None, barber_id=Non
     conn = get_conn()
     cur = conn.cursor()
     base_sql = """
-        SELECT b.id, b.user_id, b.day, b.month, b.year, b.time, b.status, b.created_at, b.service, b.customer_phone, u.username
+        SELECT b.id, b.user_id, b.day, b.month, b.year, b.time, b.status, b.created_at, b.service, b.customer_phone, b.customer_name, u.username
         FROM bookings b
         JOIN users u ON b.user_id = u.id
         WHERE b.day=? AND b.status='confirmado'

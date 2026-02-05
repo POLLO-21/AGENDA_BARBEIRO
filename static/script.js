@@ -52,9 +52,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const ano = agendaYear;
                 const mes = agendaMonth;
+                const agendaPage = document.getElementById("agenda-page");
+                const barberId = agendaPage ? agendaPage.dataset.barberId : null;
+
                 const params = new URLSearchParams();
                 if (ano) params.append("ano", ano);
                 if (mes) params.append("mes", mes);
+                if (barberId) params.append("barber_id", barberId);
+                
                 const query = params.toString() ? `?${params.toString()}` : "";
                 fetch(`/horarios/${dia}${query}`)
                     .then(resp => resp.json())
