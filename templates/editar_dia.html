@@ -124,7 +124,7 @@
     </form>
     {% endif %}
 
-    <form action="{{ url_for('excluir_dia', dia_id=dia.raw_numero, mes=dia.mes, ano=dia.ano) }}" method="POST" onsubmit="return confirm('Tem certeza? Isso desativará todos os horários deste dia.');">
+    <form action="{{ url_for('excluir_dia', dia_id=dia.raw_numero, mes=dia.mes, ano=dia.ano) }}" method="POST">
         <button type="submit" class="btn btn-danger">Excluir Dia Inteiro (Desativar Tudo)</button>
     </form>
   </div>

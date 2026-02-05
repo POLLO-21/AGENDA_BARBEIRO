@@ -47,9 +47,15 @@
                 {{ dia.numero }}
             </div>
           {% else %}
+            {% if dia.disponivel or session.get('role') == 'barbeiro' %}
             <div class="dia {% if dia.disponivel %}disponivel{% else %}ocupado{% endif %}" data-dia="{{ dia.numero }}">
                 {{ dia.numero }}
             </div>
+            {% else %}
+            <div class="dia ocupado">
+                {{ dia.numero }}
+            </div>
+            {% endif %}
           {% endif %}
         {% endif %}
       {% endfor %}

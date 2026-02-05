@@ -94,6 +94,21 @@ h2 {
     margin-top: 0;
 }
 
+/* Buttons and Links */
+.btn-text {
+    color: #666;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.btn-text:hover {
+    color: #222;
+    text-decoration: underline;
+}
+
 /* Login */
 .login-container {
     max-width: 400px;

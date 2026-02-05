@@ -112,7 +112,15 @@ def build_dias_from_db(year=None, month=None, barber_id=None, barbershop_id=None
         is_past = current_date < today
         
         slots = storage.get_availability(d, year=year, month=month, barber_id=barber_id, barbershop_id=barbershop_id)
-        disponivel = any(s.get("available", True) for s in slots)
+        
+        # Filtrar horários passados se for o dia atual
+        if not is_past and current_date == today:
+            now_time = datetime.now().strftime("%H:%M")
+            # Disponível apenas se houver slot ativo, não tomado E futuro
+            disponivel = any(s.get("available", True) and s["time"] > now_time for s in slots)
+        else:
+            disponivel = any(s.get("available", True) for s in slots)
+
         dias.append({
             "tipo": "dia",
             "numero": f"{d:02d}", 
@@ -174,7 +182,20 @@ def horarios(dia):
         return jsonify({"error": "no_shop_selected"}), 400
 
     slots = storage.get_availability(dia, year=ano, month=mes, barber_id=None, barbershop_id=barbershop_id)
-    horarios_disponiveis = [s["time"] for s in slots if s.get("available", True)]
+    
+    # Filtrar horários passados se for hoje
+    try:
+        current_date = datetime(ano, mes, dia).date()
+        if current_date == datetime.now().date():
+            now_time = datetime.now().strftime("%H:%M")
+            horarios_disponiveis = [s["time"] for s in slots if s.get("available", True) and s["time"] > now_time]
+        elif current_date < datetime.now().date():
+             horarios_disponiveis = [] # Dia passado não tem horários
+        else:
+             horarios_disponiveis = [s["time"] for s in slots if s.get("available", True)]
+    except ValueError:
+        horarios_disponiveis = []
+
     return jsonify({"dia": dia, "horarios": horarios_disponiveis, "detalhes": slots})
 
 @app.route("/reservar", methods=["POST"])
