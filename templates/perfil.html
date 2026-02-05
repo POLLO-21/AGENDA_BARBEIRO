@@ -3,51 +3,60 @@
 {% block title %}Meu Perfil - Barber Calendar{% endblock %}
 
 {% block content %}
-<div class="profile-container">
-    <h1>Configurações</h1>
-    
-    <form method="POST">
-        {% if erro %}
-            <p class="erro">{{ erro }}</p>
-        {% endif %}
+<div class="settings-container">
+    <div class="settings-card">
+        <h3>Configurações</h3>
         
-        <div class="form-grid">
-            <!-- Dados Principais -->
-            <div class="form-group">
-                <label>Usuário de Acesso</label>
-                <input type="text" name="usuario" value="{{ usuario['username'] }}" placeholder="Seu usuário">
-            </div>
-
-            <div class="form-group">
-                <label>Nome da Barbearia</label>
-                <input type="text" name="barbearia" value="{{ usuario['barbearia_nome'] or '' }}" placeholder="Nome do estabelecimento">
-            </div>
+        <form method="POST">
+            {% if erro %}
+                <p class="erro">{{ erro }}</p>
+            {% endif %}
             
-            <div class="form-group full-width">
-                <label>Telefone (WhatsApp)</label>
-                <input type="text" name="phone" value="{{ shop['phone'] if shop else '' }}" placeholder="Ex: 5511999999999">
+            <div class="form-grid">
+                <!-- Dados Principais -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Usuário de Acesso</label>
+                        <input type="text" name="usuario" value="{{ usuario['username'] }}" placeholder="Seu usuário" class="form-control">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Nome da Barbearia</label>
+                        <input type="text" name="barbearia" value="{{ usuario['barbearia_nome'] or '' }}" placeholder="Nome do estabelecimento" class="form-control">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Telefone (WhatsApp)</label>
+                    <input type="text" name="phone" value="{{ shop['phone'] if shop else '' }}" placeholder="Ex: 5511999999999" class="form-control">
+                    <small style="color: #666; font-size: 0.85rem;">Este número receberá as mensagens de confirmação.</small>
+                </div>
+
+                <!-- Alteração de Senha -->
+                <div style="margin-top: 1.5rem; border-top: 1px solid #eee; padding-top: 1.5rem;">
+                    <h4 style="margin-top: 0; margin-bottom: 1rem; color: #444;">Alterar Senha</h4>
+                    
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label>Senha Atual</label>
+                        <input type="password" name="senha_atual" placeholder="Digite sua senha atual para confirmar alterações" class="form-control">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nova Senha</label>
+                            <input type="password" name="senha_nova" placeholder="Nova senha (opcional)" class="form-control">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Confirmar Nova Senha</label>
+                            <input type="password" name="senha_confirmar" placeholder="Repita a nova senha" class="form-control">
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">Salvar Alterações</button>
             </div>
-
-            <!-- Alteração de Senha -->
-            <div class="section-title">Alterar Senha</div>
-
-            <div class="form-group full-width">
-                <label>Senha Atual</label>
-                <input type="password" name="senha_atual" placeholder="Digite sua senha atual para confirmar alterações">
-            </div>
-
-            <div class="form-group">
-                <label>Nova Senha</label>
-                <input type="password" name="senha_nova" placeholder="Nova senha (opcional)">
-            </div>
-
-            <div class="form-group">
-                <label>Confirmar Nova Senha</label>
-                <input type="password" name="senha_confirmar" placeholder="Repita a nova senha">
-            </div>
-
-            <button type="submit" class="btn-save">Salvar Alterações</button>
-        </div>
-    </form>
+        </form>
+    </div>
 </div>
 {% endblock %}

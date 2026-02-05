@@ -22,10 +22,12 @@
           <h4 class="column-title">Manhã</h4>
           <ul class="lista-horarios-admin">
             {% for slot in slots if slot.time < '12:00' %}
-            <li class="slot-card">
+            <li class="slot-card {% if slot.is_taken %}booked{% endif %}">
                 <div class="slot-header">
                     <span class="slot-time">{{ slot.time }}</span>
-                    {% if slot.available %}
+                    {% if slot.is_taken %}
+                        <span class="badge-booked">Reservado</span>
+                    {% elif slot.available %}
                       <span class="status-dot available" title="Ativo"></span>
                     {% else %}
                       <span class="status-dot unavailable" title="Ocupado/Inativo"></span>
@@ -69,10 +71,12 @@
           <h4 class="column-title">Tarde</h4>
           <ul class="lista-horarios-admin">
             {% for slot in slots if slot.time >= '12:00' %}
-            <li class="slot-card">
+            <li class="slot-card {% if slot.is_taken %}booked{% endif %}">
                 <div class="slot-header">
                     <span class="slot-time">{{ slot.time }}</span>
-                    {% if slot.available %}
+                    {% if slot.is_taken %}
+                        <span class="badge-booked">Reservado</span>
+                    {% elif slot.available %}
                       <span class="status-dot available" title="Ativo"></span>
                     {% else %}
                       <span class="status-dot unavailable" title="Ocupado/Inativo"></span>
