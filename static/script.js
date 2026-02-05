@@ -315,6 +315,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const diaStr = String(dia).padStart(2, '0');
         const mesStr = String(mes).padStart(2, '0');
         
+        // Pega ID do barbeiro da página
+        const agendaPage = document.getElementById("agenda-page");
+        const barberId = agendaPage ? agendaPage.dataset.barberId : null;
+        
         // Desabilita botões para evitar duplo clique
         const btn = document.getElementById("btn-confirmar-agendamento");
         if(btn) {
@@ -331,7 +335,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 service: servico, 
                 ano: ano, 
                 mes: mes, 
-                customer_name: name
+                customer_name: name,
+                barber_id: barberId
             })
         }).then(r => r.json()).then(res => {
             if(res.success){

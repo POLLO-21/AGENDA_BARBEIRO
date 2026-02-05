@@ -153,8 +153,22 @@ def agenda():
     barbershop_phone = shop["phone"] if shop else None
 
     barber_id = None # Opcional: filtrar por barbeiro específico se houver seleção
-    # Por enquanto, assume que agenda mostra disponibilidade da barbearia (todos ou default)
     
+    # Se não houver barbeiro selecionado explicitamente, tentar pegar o primeiro barbeiro da loja
+    # Isso garante que a agenda mostre slots de algum barbeiro (já que agora usamos slots por barbeiro)
+    if not request.args.get("barber_id") and barbershop_id:
+        users = storage.get_users_by_barbershop(barbershop_id)
+        barbers = [u for u in users if u["role"] == "barbeiro"]
+        if barbers:
+            barber_id = barbers[0]["id"]
+            
+    # Se houver seleção explícita (futuro)
+    if request.args.get("barber_id"):
+        try:
+            barber_id = int(request.args.get("barber_id"))
+        except:
+            pass
+
     barbearia_nome = session.get("barbershop_nome", "Barbearia")
 
     if role == "cliente" or role is None:
@@ -248,8 +262,9 @@ def reservar():
         service = "corte de cabelo"
 
     customer_name = request.form.get("customer_name") or (request.json and request.json.get("customer_name"))
+    barber_id = request.form.get("barber_id") or (request.json and request.json.get("barber_id"))
 
-    ok = storage.create_booking(user_id, dia, horario, service, year=year, month=month, customer_phone=None, barber_id=None, customer_name=customer_name, barbershop_id=barbershop_id)
+    ok = storage.create_booking(user_id, dia, horario, service, year=year, month=month, customer_phone=None, barber_id=barber_id, customer_name=customer_name, barbershop_id=barbershop_id)
     if ok:
         return jsonify({"success": True})
     else:
@@ -486,8 +501,9 @@ def excluir_dia(dia_id):
 
     mes = request.args.get("mes", type=int)
     ano = request.args.get("ano", type=int)
+    barbershop_id = session.get("barbershop_id")
 
-    storage.set_day_active(dia_id, 0, year=ano, month=mes, barber_id=session["user_id"])
+    storage.set_day_active(dia_id, 0, year=ano, month=mes, barber_id=session["user_id"], barbershop_id=barbershop_id)
     return redirect(url_for("painel_barbeiro", mes=mes, ano=ano))
 
 @app.route('/restaurar_dia/<int:dia_id>', methods=['POST'])
@@ -497,8 +513,9 @@ def restaurar_dia(dia_id):
         
     mes = request.args.get("mes", type=int)
     ano = request.args.get("ano", type=int)
+    barbershop_id = session.get("barbershop_id")
 
-    storage.restore_day_availability(dia_id, year=ano, month=mes, barber_id=session["user_id"])
+    storage.restore_day_availability(dia_id, year=ano, month=mes, barber_id=session["user_id"], barbershop_id=barbershop_id)
     return redirect(url_for("painel_barbeiro", mes=mes, ano=ano))
 
 @app.route('/editar_horario/<int:horario_id>', methods=['GET', 'POST'])
