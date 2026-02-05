@@ -1,6 +1,6 @@
 import os
 import calendar
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -10,6 +10,13 @@ import storage
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY") or "dev_secret"
 storage.init_db()
+
+# Helper para data/hora local (Brasil - UTC-3)
+def get_local_now():
+    # Garante que usamos o horário do Brasil independentemente do fuso do servidor (VPS)
+    utc_now = datetime.now(timezone.utc)
+    br_offset = timezone(timedelta(hours=-3))
+    return utc_now.astimezone(br_offset)
 
 @app.route("/")
 def home():
@@ -91,7 +98,7 @@ MESES = [
 
 def build_dias_from_db(year=None, month=None, barber_id=None, barbershop_id=None):
     if year is None or month is None:
-        now = datetime.now()
+        now = get_local_now()
         year = now.year
         month = now.month
     # Detalhes do mês
@@ -105,7 +112,7 @@ def build_dias_from_db(year=None, month=None, barber_id=None, barbershop_id=None
     for _ in range(start_offset):
         dias.append({"tipo": "vazio"})
         
-    today = datetime.now().date()
+    today = get_local_now().date()
     
     for d in range(1, num_days + 1):
         current_date = datetime(year, month, d).date()
@@ -115,7 +122,7 @@ def build_dias_from_db(year=None, month=None, barber_id=None, barbershop_id=None
         
         # Filtrar horários passados se for o dia atual
         if not is_past and current_date == today:
-            now_time = datetime.now().strftime("%H:%M")
+            now_time = get_local_now().strftime("%H:%M")
             # Disponível apenas se houver slot ativo, não tomado E futuro
             disponivel = any(s.get("available", True) and s["time"] > now_time for s in slots)
         else:
@@ -133,7 +140,7 @@ def build_dias_from_db(year=None, month=None, barber_id=None, barbershop_id=None
         "dias": dias,
         "mes": month,
         "ano": year,
-        "current_year": datetime.now().year,
+        "current_year": get_local_now().year,
         "mes_nome": f"{MESES[month-1]}",
         "meses_lista": MESES,
         "semana_header": ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
@@ -206,10 +213,11 @@ def horarios(dia):
     # Filtrar horários passados se for hoje
     try:
         current_date = datetime(ano, mes, dia).date()
-        if current_date == datetime.now().date():
-            now_time = datetime.now().strftime("%H:%M")
+        today = get_local_now().date()
+        if current_date == today:
+            now_time = get_local_now().strftime("%H:%M")
             horarios_disponiveis = [s["time"] for s in slots if s.get("available", True) and s["time"] > now_time]
-        elif current_date < datetime.now().date():
+        elif current_date < today:
              horarios_disponiveis = [] # Dia passado não tem horários
         else:
              horarios_disponiveis = [s["time"] for s in slots if s.get("available", True)]
@@ -259,7 +267,7 @@ def reservar():
     # Validação de data passada
     try:
         booking_date = datetime(year, month, dia).date()
-        if booking_date < datetime.now().date():
+        if booking_date < get_local_now().date():
              return jsonify({"success": False, "error": "past_date"})
     except:
         pass 
@@ -450,7 +458,7 @@ def painel_barbeiro():
     dados_cal = build_dias_from_db(year=ano, month=mes, barber_id=session["user_id"])
 
     # Buscar agendamentos de HOJE
-    now = datetime.now()
+    now = get_local_now()
     agendamentos_hoje_rows = storage.get_bookings_by_day_with_usernames(now.day, now.year, now.month, barber_id=session["user_id"])
     agendamentos_hoje = []
     for r in agendamentos_hoje_rows:
