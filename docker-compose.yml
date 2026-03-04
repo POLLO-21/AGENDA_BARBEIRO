@@ -7,13 +7,11 @@ services:
     restart: unless-stopped
     environment:
       - SECRET_KEY=${SECRET_KEY:-dev_secret}
-      # Opcional: defina DATABASE_URL para apontar para um volume persistente
-      # - DATABASE_URL=sqlite:////data/agenda.db
+      - DATABASE_URL=sqlite:///instance/agenda.db
+      - FLASK_ENV=production
     volumes:
-      # Código da aplicação (somente leitura em produção é recomendado)
-      - .:/app
-      # Volume opcional para o banco de dados; ajuste o caminho conforme sua VPS
-      # - /var/www/barber_calendar/instance:/data
+      # Mapeia a pasta instance para não perder o banco de dados e agendamentos
+      - ./instance:/app/instance
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
 
