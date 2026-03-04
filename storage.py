@@ -114,6 +114,10 @@ def init_db():
         cur.execute("ALTER TABLE bookings ADD COLUMN barber_id INTEGER")
     if "barbershop_id" not in cols:
         cur.execute("ALTER TABLE bookings ADD COLUMN barbershop_id INTEGER")
+    if "service_id" not in cols:
+        cur.execute("ALTER TABLE bookings ADD COLUMN service_id INTEGER")
+    if "price_cents" not in cols:
+        cur.execute("ALTER TABLE bookings ADD COLUMN price_cents INTEGER DEFAULT 0")
 
     cur.execute("PRAGMA table_info(availability)")
     acols = [r["name"] for r in cur.fetchall()]
@@ -125,6 +129,20 @@ def init_db():
         cur.execute("ALTER TABLE availability ADD COLUMN year INTEGER")
     if "barbershop_id" not in acols:
         cur.execute("ALTER TABLE availability ADD COLUMN barbershop_id INTEGER")
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS services (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            barber_id INTEGER NOT NULL,
+            barbershop_id INTEGER,
+            name TEXT NOT NULL,
+            price_cents INTEGER NOT NULL DEFAULT 0,
+            active INTEGER NOT NULL DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_services_barber ON services(barber_id, barbershop_id)")
 
     # Criar tabela barbershops se não existir
     cur.execute("""
@@ -527,7 +545,7 @@ def is_slot_taken(day, time, year=None, month=None, barber_id=None, barbershop_i
     conn.close()
     return c > 0
 
-def create_booking(user_id, day, time, service="corte de cabelo", year=None, month=None, customer_phone=None, barber_id=None, customer_name=None, barbershop_id=None):
+def create_booking(user_id, day, time, service="corte de cabelo", year=None, month=None, customer_phone=None, barber_id=None, customer_name=None, barbershop_id=None, price_cents=None, service_id=None):
     if year is None or month is None:
         now = datetime.now()
         if year is None:
@@ -537,11 +555,16 @@ def create_booking(user_id, day, time, service="corte de cabelo", year=None, mon
     if is_slot_taken(day, time, year, month, barber_id, barbershop_id):
         return False
     
+    if price_cents is None:
+        price_cents = 0
+    if service_id is None:
+        service_id = None
+    
     conn = get_conn()
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO bookings(user_id,day,month,year,time,status,created_at,service,customer_phone,customer_name,barber_id,barbershop_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
-        (user_id, day, month, year, time, "confirmado", datetime.now(), service, customer_phone, customer_name, barber_id, barbershop_id)
+        "INSERT INTO bookings(user_id,day,month,year,time,status,created_at,service,customer_phone,customer_name,barber_id,barbershop_id,price_cents,service_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        (user_id, day, month, year, time, "confirmado", datetime.now(), service, customer_phone, customer_name, barber_id, barbershop_id, price_cents, service_id)
     )
     conn.commit()
     conn.close()
@@ -563,7 +586,7 @@ def get_bookings_by_day_with_usernames(day, year=None, month=None, barber_id=Non
     conn = get_conn()
     cur = conn.cursor()
     base_sql = """
-        SELECT b.id, b.user_id, b.day, b.month, b.year, b.time, b.status, b.created_at, b.service, b.customer_phone, b.customer_name, u.username
+        SELECT b.id, b.user_id, b.day, b.month, b.year, b.time, b.status, b.created_at, b.service, b.customer_phone, b.customer_name, b.price_cents, u.username
         FROM bookings b
         JOIN users u ON b.user_id = u.id
         WHERE b.day=? AND b.status='confirmado'
@@ -602,7 +625,7 @@ def get_all_bookings_with_usernames(barber_id=None, barbershop_id=None):
     conn = get_conn()
     cur = conn.cursor()
     sql = """
-        SELECT b.id, b.user_id, b.day, b.month, b.year, b.time, b.status, b.created_at, b.service, b.customer_phone, b.customer_name, u.username
+        SELECT b.id, b.user_id, b.day, b.month, b.year, b.time, b.status, b.created_at, b.service, b.customer_phone, b.customer_name, b.price_cents, u.username
         FROM bookings b
         JOIN users u ON b.user_id = u.id
         WHERE b.status='confirmado'
@@ -622,6 +645,92 @@ def get_all_bookings_with_usernames(barber_id=None, barbershop_id=None):
         
     sql += " ORDER BY b.year DESC, b.month DESC, b.day DESC, b.time"
     
+    cur.execute(sql, tuple(params))
+    rows = cur.fetchall()
+    conn.close()
+    return rows
+
+def get_services_for_barber(barber_id, barbershop_id=None):
+    conn = get_conn()
+    cur = conn.cursor()
+    sql = "SELECT id, name, price_cents, active FROM services WHERE barber_id=?"
+    params = [barber_id]
+    if barbershop_id is None:
+        sql += " AND (barbershop_id IS NULL OR barbershop_id=0)"
+    else:
+        sql += " AND (barbershop_id IS NULL OR barbershop_id=? OR barbershop_id=0)"
+        params.append(barbershop_id)
+    sql += " AND active=1 ORDER BY name"
+    cur.execute(sql, tuple(params))
+    rows = cur.fetchall()
+    conn.close()
+    return rows
+
+def get_service_by_id(service_id, barber_id=None, barbershop_id=None):
+    conn = get_conn()
+    cur = conn.cursor()
+    sql = "SELECT id, barber_id, barbershop_id, name, price_cents, active FROM services WHERE id=?"
+    params = [service_id]
+    if barber_id is not None:
+        sql += " AND barber_id=?"
+        params.append(barber_id)
+    if barbershop_id is not None:
+        sql += " AND (barbershop_id=? OR barbershop_id IS NULL OR barbershop_id=0)"
+        params.append(barbershop_id)
+    cur.execute(sql, tuple(params))
+    row = cur.fetchone()
+    conn.close()
+    return row
+
+def create_service(barber_id, barbershop_id, name, price_cents):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO services(barber_id, barbershop_id, name, price_cents, active) VALUES(?,?,?,?,1)",
+        (barber_id, barbershop_id, name, price_cents)
+    )
+    conn.commit()
+    conn.close()
+
+def update_service(service_id, barber_id, barbershop_id, name, price_cents):
+    conn = get_conn()
+    cur = conn.cursor()
+    sql = "UPDATE services SET name=?, price_cents=? WHERE id=? AND barber_id=?"
+    params = [name, price_cents, service_id, barber_id]
+    if barbershop_id is not None:
+        sql += " AND (barbershop_id=? OR barbershop_id IS NULL OR barbershop_id=0)"
+        params.append(barbershop_id)
+    cur.execute(sql, tuple(params))
+    conn.commit()
+    conn.close()
+
+def delete_service(service_id, barber_id, barbershop_id):
+    conn = get_conn()
+    cur = conn.cursor()
+    sql = "UPDATE services SET active=0 WHERE id=? AND barber_id=?"
+    params = [service_id, barber_id]
+    if barbershop_id is not None:
+        sql += " AND (barbershop_id=? OR barbershop_id IS NULL OR barbershop_id=0)"
+        params.append(barbershop_id)
+    cur.execute(sql, tuple(params))
+    conn.commit()
+    conn.close()
+
+def get_monthly_stats_for_barber(barber_id, barbershop_id=None):
+    conn = get_conn()
+    cur = conn.cursor()
+    sql = """
+        SELECT year, month, COUNT(*) AS total_cortes, COALESCE(SUM(price_cents), 0) AS total_revenue
+        FROM bookings
+        WHERE status='confirmado' AND barber_id=?
+    """
+    params = [barber_id]
+    if barbershop_id is None:
+        sql += " AND (barbershop_id IS NULL OR barbershop_id=0)"
+    else:
+        sql += " AND (barbershop_id=? OR barbershop_id IS NULL OR barbershop_id=0)"
+        params.append(barbershop_id)
+    sql += " GROUP BY year, month ORDER BY year DESC, month DESC"
     cur.execute(sql, tuple(params))
     rows = cur.fetchall()
     conn.close()

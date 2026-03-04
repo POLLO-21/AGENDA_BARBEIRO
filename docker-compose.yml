@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  barber_calendar:
+    build: .
+    container_name: barber_calendar_app
+    restart: unless-stopped
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-dev_secret}
+      # Opcional: defina DATABASE_URL para apontar para um volume persistente
+      # - DATABASE_URL=sqlite:////data/agenda.db
+    volumes:
+      # Código da aplicação (somente leitura em produção é recomendado)
+      - .:/app
+      # Volume opcional para o banco de dados; ajuste o caminho conforme sua VPS
+      # - /var/www/barber_calendar/instance:/data
+    ports:
+      - "8000:8000"
+

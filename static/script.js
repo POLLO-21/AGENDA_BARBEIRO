@@ -31,6 +31,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let selectedDay = null;
     let selectedTime = null;
     let selectedService = null;
+    let selectedServiceId = null;
+    let selectedServicePrice = null;
 
     if (!painelBarbeiro) {
         document.querySelectorAll(".dia[data-dia]").forEach(card => {
@@ -263,11 +265,7 @@ document.addEventListener("DOMContentLoaded", () => {
             seletor.id = "escolha-servico";
             seletor.innerHTML = `
                 <p style="margin-top: 1rem;">Escolha o tipo de serviço:</p>
-                <div class="servico-options">
-                    <button type="button" data-servico="corte de cabelo" class="btn btn-secondary btn-sm btn-servico">Corte de cabelo</button>
-                    <button type="button" data-servico="corte de cabelo e barba" class="btn btn-secondary btn-sm btn-servico">Corte + barba</button>
-                    <button type="button" data-servico="somente barba" class="btn btn-secondary btn-sm btn-servico">Somente barba</button>
-                </div>
+                <div id="servico-options-container" class="servico-options"></div>
                 <div style="margin-top:0.75rem; text-align:center;">
                     <input type="text" id="customer-name" placeholder="Seu Nome (opcional)" style="padding:8px; width:100%; border:1px solid #ccc; border-radius:4px; margin-bottom:0.5rem; box-sizing: border-box;">
                 </div>
@@ -278,43 +276,96 @@ document.addEventListener("DOMContentLoaded", () => {
             modal.querySelector(".modal-content").appendChild(seletor);
         }
 
-        const botoesServico = seletor.querySelectorAll(".btn-servico");
         const btnConfirmar = document.getElementById("btn-confirmar-agendamento");
         const inputName = document.getElementById("customer-name");
+        const container = document.getElementById("servico-options-container");
 
         selectedService = null;
-        btnConfirmar.disabled = true;
-        botoesServico.forEach(b => {
-            b.classList.remove("btn-primary");
-            b.classList.add("btn-secondary");
-        });
-        
-        if(inputName) inputName.value = "";
+        selectedServiceId = null;
+        if (btnConfirmar) btnConfirmar.disabled = true;
+        if (inputName) inputName.value = "";
 
-        botoesServico.forEach(btn => {
-            btn.onclick = () => {
-                selectedService = btn.getAttribute("data-servico");
-                botoesServico.forEach(b => {
-                    b.classList.remove("btn-primary");
-                    b.classList.add("btn-secondary");
-                });
-                btn.classList.remove("btn-secondary");
-                btn.classList.add("btn-primary");
+        function montarBotoes(services) {
+            container.innerHTML = "";
+            let lista;
+            if (services && services.length > 0) {
+                lista = services.map(s => ({
+                    id: s.id,
+                    label: s.name,
+                    price: s.price_cents ? (s.price_cents / 100).toFixed(2).replace('.', ',') : null
+                }));
+            } else {
+                lista = [
+                    { id: null, label: "corte de cabelo", price: null },
+                    { id: null, label: "corte de cabelo e barba", price: null },
+                    { id: null, label: "somente barba", price: null }
+                ];
+            }
+            lista.forEach(s => {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "btn btn-secondary btn-sm btn-servico";
+                
+                // Texto do botão com preço se existir
+                if (s.price) {
+                    btn.innerHTML = `${s.label} <span style="font-size:0.85em; opacity:0.8; margin-left:4px;">(R$ ${s.price})</span>`;
+                } else {
+                    btn.textContent = s.label;
+                }
+                
+                btn.dataset.servico = s.label;
+                btn.dataset.preco = s.price || "";
+                if (s.id) btn.dataset.serviceId = String(s.id);
+                btn.onclick = () => {
+                    selectedService = btn.getAttribute("data-servico");
+                    selectedServiceId = btn.dataset.serviceId ? parseInt(btn.dataset.serviceId) : null;
+                    selectedServicePrice = btn.dataset.preco ? `R$ ${btn.dataset.preco}` : "";
+                    
+                    container.querySelectorAll(".btn-servico").forEach(b => {
+                        b.classList.remove("btn-primary");
+                        b.classList.add("btn-secondary");
+                    });
+                    btn.classList.remove("btn-secondary");
+                    btn.classList.add("btn-primary");
+                    if (selectedDay && selectedTime && selectedService && btnConfirmar) {
+                        btnConfirmar.disabled = false;
+                    }
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        if (container) {
+            const agendaPage = document.getElementById("agenda-page");
+            const barberId = agendaPage ? agendaPage.dataset.barberId : null;
+            let url = "/api/services";
+            if (barberId) {
+                url += `?barber_id=${barberId}`;
+            }
+            container.textContent = "Carregando serviços...";
+            fetch(url)
+                .then(r => r.json())
+                .then(data => {
+                    if (data && data.success) {
+                        montarBotoes(data.services || []);
+                    } else {
+                        montarBotoes(null);
+                    }
+                })
+                .catch(() => montarBotoes(null));
+        }
+
+        if (btnConfirmar) {
+            btnConfirmar.onclick = () => {
                 if (selectedDay && selectedTime && selectedService) {
-                    btnConfirmar.disabled = false;
+                    const name = inputName ? inputName.value : "";
+                    fazerReserva(selectedDay, selectedTime, selectedService, agendaYear, agendaMonth, name, selectedServiceId);
                 }
             };
-        });
-
-        btnConfirmar.onclick = () => {
-            if (selectedDay && selectedTime && selectedService) {
-                const name = inputName ? inputName.value : "";
-                fazerReserva(selectedDay, selectedTime, selectedService, agendaYear, agendaMonth, name);
-            }
-        };
+        }
     }
 
-    function fazerReserva(dia, horario, servico, ano, mes, name) {
+    function fazerReserva(dia, horario, servico, ano, mes, name, serviceId) {
         // Confirmação removida conforme pedido (o clique no botão já serve de confirmação)
         
         const diaStr = String(dia).padStart(2, '0');
@@ -341,7 +392,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 ano: ano, 
                 mes: mes, 
                 customer_name: name,
-                barber_id: barberId
+                barber_id: barberId,
+                service_id: serviceId
             })
         }).then(r => r.json()).then(res => {
             if(res.success){
@@ -363,6 +415,7 @@ document.addEventListener("DOMContentLoaded", () => {
                          const cleanPhone = shopPhone.replace(/\D/g, '');
                          
                          let msg = `Olá! Acabei de agendar um horário:\nData: ${diaStr}/${mesStr}/${ano}\nHorário: ${horario}\nServiço: ${servico}`;
+                         if (selectedServicePrice) msg += `\nValor: ${selectedServicePrice}`;
                          if (name) msg += `\nCliente: ${name}`;
                          
                          const waUrl = `https://wa.me/${prefix}${cleanPhone}?text=${encodeURIComponent(msg)}`;

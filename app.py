@@ -552,7 +552,13 @@ def financeiro():
     current_month = now.month
     current_stats = next((m for m in monthly_stats if m["year"] == current_year and m["month"] == current_month), None)
     if not current_stats:
-        current_stats = {"total_cortes": 0, "total_revenue_reais": 0.0}
+        current_stats = {"total_cortes": 0, "total_revenue_reais": 0.0, "ticket_medio": 0.0}
+    else:
+        # Calcular Ticket Médio
+        if current_stats["total_cortes"] > 0:
+            current_stats["ticket_medio"] = current_stats["total_revenue_reais"] / current_stats["total_cortes"]
+        else:
+            current_stats["ticket_medio"] = 0.0
     return render_template("financeiro.html", services=services, monthly_stats=monthly_stats, current_month_stats=current_stats)
 
 @app.route("/api/services")

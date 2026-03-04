@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Financeiro{% endblock %}
+{% block content %}
+<main class="container mt-4">
+  <section class="finance-section">
+    <h2>Financeiro</h2>
+    <div class="finance-layout">
+      <div class="finance-card">
+        <h3>Serviços</h3>
+        <form method="post" class="finance-service-form">
+          <input type="hidden" name="action" value="create_service">
+          <div class="finance-form-row">
+            <input type="text" name="name" placeholder="Nome do serviço" required>
+            <input type="text" name="price" placeholder="Preço (ex: 35,00)" title="Digite apenas o valor, ex: 35 ou 35,00" required>
+            <button type="submit" class="btn btn-primary btn-sm">Adicionar</button>
+          </div>
+        </form>
+        <div class="finance-services-list">
+          {% if services %}
+            {% for s in services %}
+              <form method="post" class="finance-service-item">
+                <input type="hidden" name="action" value="update_service">
+                <input type="hidden" name="service_id" value="{{ s.id }}">
+                <input type="text" name="name" value="{{ s.name }}" required>
+                <input type="text" name="price" value="{{ '%.2f'|format((s.price_cents or 0) / 100) }}" required>
+                <button type="submit" class="btn btn-secondary btn-sm">Salvar</button>
+                <button type="submit" name="action" value="delete_service" class="btn btn-danger btn-sm">Remover</button>
+              </form>
+            {% endfor %}
+          {% else %}
+            <p class="finance-empty">Nenhum serviço cadastrado ainda.</p>
+          {% endif %}
+        </div>
+      </div>
+      <div class="finance-card">
+        <h3>Resumo do Mês</h3>
+        <div class="finance-summary">
+          <div class="finance-summary-item">
+            <span class="finance-summary-label">Cortes</span>
+            <span class="finance-summary-value">{{ current_month_stats.total_cortes }}</span>
+          </div>
+          <div class="finance-summary-item">
+            <span class="finance-summary-label">Faturamento</span>
+            <span class="finance-summary-value">R$ {{ '%.2f'|format(current_month_stats.total_revenue_reais) }}</span>
+          </div>
+          <div class="finance-summary-item highlight">
+            <span class="finance-summary-label">Ticket Médio</span>
+            <span class="finance-summary-value">R$ {{ '%.2f'|format(current_month_stats.ticket_medio or 0) }}</span>
+          </div>
+        </div>
+        <h3 style="margin-top:1.5rem;">Histórico mensal</h3>
+        <div class="finance-chart">
+          {% if monthly_stats %}
+            {% for m in monthly_stats %}
+              <div class="finance-chart-row">
+                <div class="finance-chart-label">
+                  {{ "%02d/%04d"|format(m.month, m.year) }}
+                </div>
+                <div class="finance-chart-bar-wrap">
+                  <div class="finance-chart-bar" style="width: {{ m.percent }}%;"></div>
+                </div>
+                <div class="finance-chart-value">
+                  R$ {{ '%.2f'|format(m.total_revenue_reais) }}
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <p class="finance-empty">Ainda não há dados suficientes para o gráfico.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %}
+
