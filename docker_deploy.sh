@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script de Migração para Docker - Barber Calendar
+# Script de Migração para Docker - Barber Calendar (v2)
 # Este script automatiza a transição do Systemd para Docker mantendo os dados.
 
 set -e
@@ -10,13 +10,16 @@ NGINX_CONF="/etc/nginx/sites-available/barber_calendar"
 
 echo "--- Iniciando Migração para Docker ---"
 
-# 1. Instalar Docker e Compose se não existirem
+# 1. Instalar Docker e Compose usando o script oficial (mais robusto)
 if ! command -v docker &> /dev/null; then
-    echo "[1/5] Instalando Docker..."
-    sudo apt-get update
-    sudo apt-get install -y docker.io docker-compose-plugin
+    echo "[1/5] Instalando Docker via script oficial..."
+    curl -fsSL https://get.docker.com -o get-docker.sh
+    sudo sh get-docker.sh
     sudo systemctl enable docker
     sudo systemctl start docker
+    rm get-docker.sh
+else
+    echo "[1/5] Docker já instalado."
 fi
 
 # 2. Entrar no diretório
@@ -29,16 +32,21 @@ sudo systemctl disable barber_calendar || true
 
 # 4. Construir e subir o container
 echo "[3/5] Construindo e iniciando container Docker..."
+# Garante que o diretório instance existe para o volume
+mkdir -p instance
 sudo docker compose build
 sudo docker compose up -d
 
 # 5. Atualizar Nginx para apontar para o Docker (Porta 8000)
 echo "[4/5] Atualizando configuração do Nginx..."
-# Backup da config atual
-sudo cp $NGINX_CONF "${NGINX_CONF}.bak"
-
-# Substitui o proxy_pass de socket unix para localhost:8000
-sudo sed -i "s|proxy_pass http://unix:$APP_DIR/barber_calendar.sock;|proxy_pass http://127.0.0.1:8000;|" $NGINX_CONF
+if [ -f "$NGINX_CONF" ]; then
+    # Backup da config atual
+    sudo cp $NGINX_CONF "${NGINX_CONF}.bak"
+    # Substitui o proxy_pass de socket unix para localhost:8000
+    sudo sed -i "s|proxy_pass http://unix:$APP_DIR/barber_calendar.sock;|proxy_pass http://127.0.0.1:8000;|" $NGINX_CONF
+else
+    echo "Aviso: Arquivo de configuração do Nginx não encontrado em $NGINX_CONF"
+fi
 
 # 6. Reiniciar Nginx
 echo "[5/5] Reiniciando Nginx..."
