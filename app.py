@@ -277,13 +277,29 @@ def reservar():
 
     customer_name = request.form.get("customer_name") or (request.json and request.json.get("customer_name"))
     barber_id = request.form.get("barber_id") or (request.json and request.json.get("barber_id"))
+    service_id = request.form.get("service_id") or (request.json and request.json.get("service_id"))
     try:
         if barber_id:
             barber_id = int(barber_id)
     except:
         barber_id = None
 
-    ok = storage.create_booking(user_id, dia, horario, service, year=year, month=month, customer_phone=None, barber_id=barber_id, customer_name=customer_name, barbershop_id=barbershop_id)
+    price_cents = None
+    try:
+        if service_id:
+            service_id_int = int(service_id)
+        else:
+            service_id_int = None
+    except:
+        service_id_int = None
+    if service_id_int:
+        svc = storage.get_service_by_id(service_id_int, barber_id=barber_id, barbershop_id=barbershop_id)
+        if svc:
+            if not service:
+                service = svc["name"]
+            price_cents = svc["price_cents"]
+
+    ok = storage.create_booking(user_id, dia, horario, service, year=year, month=month, customer_phone=None, barber_id=barber_id, customer_name=customer_name, barbershop_id=barbershop_id, price_cents=price_cents, service_id=service_id_int)
     if ok:
         return jsonify({"success": True})
     else:
@@ -447,7 +463,8 @@ def painel_barbeiro():
     if session.get("role") != "barbeiro":
         return redirect(url_for("agenda"))
 
-    bookings = storage.get_all_bookings_with_usernames(barber_id=session["user_id"])
+    barbershop_id = session.get("barbershop_id")
+    bookings = storage.get_all_bookings_with_usernames(barber_id=session["user_id"], barbershop_id=barbershop_id)
     try:
         mes = int(request.args.get("mes")) if request.args.get("mes") else None
         ano = int(request.args.get("ano")) if request.args.get("ano") else None
@@ -455,11 +472,11 @@ def painel_barbeiro():
         mes = None
         ano = None
     
-    dados_cal = build_dias_from_db(year=ano, month=mes, barber_id=session["user_id"])
+    dados_cal = build_dias_from_db(year=ano, month=mes, barber_id=session["user_id"], barbershop_id=barbershop_id)
 
     # Buscar agendamentos de HOJE
     now = get_local_now()
-    agendamentos_hoje_rows = storage.get_bookings_by_day_with_usernames(now.day, now.year, now.month, barber_id=session["user_id"])
+    agendamentos_hoje_rows = storage.get_bookings_by_day_with_usernames(now.day, now.year, now.month, barber_id=session["user_id"], barbershop_id=barbershop_id)
     agendamentos_hoje = []
     for r in agendamentos_hoje_rows:
         # Usa customer_name se existir, senão usa username (do cadastro ou "Cliente")
@@ -475,13 +492,94 @@ def painel_barbeiro():
 
     return render_template("painel_barbeiro.html", bookings=bookings, agendamentos_hoje=agendamentos_hoje, **dados_cal)
 
+@app.route("/financeiro", methods=["GET", "POST"])
+def financeiro():
+    if "user_id" not in session or session.get("role") != "barbeiro":
+        return redirect(url_for("login"))
+    barber_id = session["user_id"]
+    barbershop_id = session.get("barbershop_id")
+    if request.method == "POST":
+        action = request.form.get("action")
+        name = request.form.get("name", "").strip()
+        price_str = request.form.get("price", "").strip()
+        service_id = request.form.get("service_id")
+        price_cents = 0
+        if price_str:
+            normalized = price_str.replace("R$", "").replace(" ", "").replace(".", "").replace(",", ".")
+            try:
+                value = float(normalized)
+                price_cents = int(round(value * 100))
+            except:
+                price_cents = 0
+        if action == "create_service" and name:
+            storage.create_service(barber_id, barbershop_id, name, price_cents)
+        elif action == "update_service" and service_id:
+            try:
+                sid = int(service_id)
+                storage.update_service(sid, barber_id, barbershop_id, name, price_cents)
+            except:
+                pass
+        elif action == "delete_service" and service_id:
+            try:
+                sid = int(service_id)
+                storage.delete_service(sid, barber_id, barbershop_id)
+            except:
+                pass
+        return redirect(url_for("financeiro"))
+    services_rows = storage.get_services_for_barber(barber_id, barbershop_id)
+    services = [dict(r) for r in services_rows]
+    stats_rows = storage.get_monthly_stats_for_barber(barber_id, barbershop_id)
+    monthly_stats = []
+    max_revenue = 0
+    for r in stats_rows:
+        revenue_reais = (r["total_revenue"] or 0) / 100.0
+        if revenue_reais > max_revenue:
+            max_revenue = revenue_reais
+        monthly_stats.append({
+            "year": r["year"],
+            "month": r["month"],
+            "total_cortes": r["total_cortes"],
+            "total_revenue_reais": revenue_reais,
+            "percent": 0
+        })
+    for m in monthly_stats:
+        if max_revenue > 0:
+            m["percent"] = int((m["total_revenue_reais"] / max_revenue) * 100)
+        else:
+            m["percent"] = 0
+    now = get_local_now()
+    current_year = now.year
+    current_month = now.month
+    current_stats = next((m for m in monthly_stats if m["year"] == current_year and m["month"] == current_month), None)
+    if not current_stats:
+        current_stats = {"total_cortes": 0, "total_revenue_reais": 0.0}
+    return render_template("financeiro.html", services=services, monthly_stats=monthly_stats, current_month_stats=current_stats)
+
+@app.route("/api/services")
+def api_services():
+    barbershop_id = session.get("barbershop_id")
+    barber_id_param = request.args.get("barber_id", type=int)
+    barber_id = barber_id_param or session.get("user_id")
+    if not barber_id:
+        return jsonify({"success": False, "services": []})
+    rows = storage.get_services_for_barber(barber_id, barbershop_id)
+    services = []
+    for r in rows:
+        services.append({
+            "id": r["id"],
+            "name": r["name"],
+            "price_cents": r["price_cents"]
+        })
+    return jsonify({"success": True, "services": services})
+
 @app.route("/api/dia/<int:dia>/agendamentos")
 def api_agendamentos_dia(dia):
     if "user_id" not in session or session.get("role") != "barbeiro":
         return jsonify({"success": False, "error": "not_allowed"}), 403
     ano = request.args.get("ano", type=int)
     mes = request.args.get("mes", type=int)
-    rows = storage.get_bookings_by_day_with_usernames(dia, year=ano, month=mes, barber_id=session["user_id"])
+    barbershop_id = session.get("barbershop_id")
+    rows = storage.get_bookings_by_day_with_usernames(dia, year=ano, month=mes, barber_id=session["user_id"], barbershop_id=barbershop_id)
     dados = []
     for r in rows:
         nome_cliente = r["customer_name"] if r["customer_name"] else r["username"]
