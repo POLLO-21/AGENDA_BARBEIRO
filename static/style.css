@@ -820,15 +820,6 @@ h2 {
     border: 1px solid #eef0f2;
 }
 
-.finance-summary-item.highlight {
-    background: #e3f2fd;
-    border-color: #bbdefb;
-}
-
-.finance-summary-item.highlight .finance-summary-value {
-    color: #1976d2;
-}
-
 .finance-summary-label {
     font-size: 0.9rem;
     opacity: 0.9;
