@@ -4,12 +4,12 @@
 <main class="container mt-4" id="painel-barbeiro" data-ano="{{ ano }}" data-mes="{{ mes }}">
   <section>
       <!-- Seção: Hoje -->
-      <div class="hoje-section" style="margin-bottom: 2rem;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-            <h3 style="margin:0; color:#4caf50;">Agendamentos de Hoje ({{ agendamentos_hoje|length }})</h3>
-            <div style="display:flex; gap:0.5rem;">
+      <div class="hoje-section">
+          <div class="hoje-header">
+            <h3>Agendamentos de Hoje ({{ agendamentos_hoje|length }})</h3>
+            <div class="hoje-actions">
                 <input type="hidden" id="shop-slug-data" value="{{ session.get('barbershop_slug', '') }}">
-                <button id="btn-share-whatsapp" class="btn btn-whatsapp" data-agenda-url="{{ url_for('agenda') }}" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                <button id="btn-share-whatsapp" class="btn btn-whatsapp" data-agenda-url="{{ url_for('agenda') }}">
                   Compartilhar Link da Agenda
                 </button>
             </div>

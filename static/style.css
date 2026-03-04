@@ -875,8 +875,81 @@ h2 {
     font-variant-numeric: tabular-nums;
 }
 
+/* Painel do Barbeiro */
+.hoje-section {
+    margin-bottom: 2rem;
+}
+
+.hoje-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+}
+
+.hoje-header h3 {
+    margin: 0;
+    color: #4caf50;
+    font-size: 1.3rem;
+}
+
+.hoje-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-whatsapp {
+    background-color: #25d366;
+    color: white;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-whatsapp:hover {
+    background-color: #1ebe57;
+}
+
 /* Mobile & Responsive Adaptations */
 @media (max-width: 768px) {
+    .hoje-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+        text-align: center;
+    }
+
+    .hoje-actions {
+        justify-content: center;
+    }
+
+    .btn-whatsapp {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .appointment-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .appointment-actions {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid #f3f4f6;
+        padding-top: 0.5rem;
+    }
+
     section {
         padding: 1rem;
         margin: 0.5rem;
