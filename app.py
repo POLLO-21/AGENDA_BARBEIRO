@@ -9,6 +9,41 @@ import storage
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY") or "dev_secret"
+
+# Configurações de Segurança para Produção (HTTPS)
+if os.getenv("FLASK_ENV") == "production" or not os.getenv("DEBUG"):
+    app.config.update(
+        SESSION_COOKIE_SECURE=True,
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE='Lax',
+        PERMANENT_SESSION_LIFETIME=timedelta(days=7)
+    )
+
+@app.after_request
+def add_security_headers(response):
+    # Força HTTPS (HSTS) - 1 ano
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    # Evita que o site seja carregado em iframes (protege contra Clickjacking)
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    # Evita que o navegador tente "adivinhar" o tipo de conteúdo (protege contra XSS via MIME sniffing)
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    # Proteção básica contra XSS
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    # Referrer Policy
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    # Content Security Policy (CSP) básica para permitir scripts e estilos locais e CDN do jQuery
+    csp = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://code.jquery.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data: https://wa.me; "
+        "connect-src 'self'; "
+        "frame-ancestors 'none';"
+    )
+    response.headers['Content-Security-Policy'] = csp
+    return response
+
 storage.init_db()
 
 # Helper para data/hora local (Brasil - UTC-3)
@@ -61,6 +96,7 @@ def login():
         senha = request.form.get("senha")
         user = storage.verify_user(usuario, senha)
         if user:
+            session.permanent = True
             session["user_id"] = user["id"]
             session["usuario"] = user["username"]
             session["role"] = user["role"]
