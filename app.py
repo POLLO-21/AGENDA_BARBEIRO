@@ -154,22 +154,28 @@ def build_dias_from_db(year=None, month=None, barber_id=None, barbershop_id=None
         current_date = datetime(year, month, d).date()
         is_past = current_date < today
         
-        slots = storage.get_availability(d, year=year, month=month, barber_id=barber_id, barbershop_id=barbershop_id)
+        # Bloquear domingos (0=Segunda, ..., 6=Domingo no calendar, mas weekday() do datetime é 0=Segunda, 6=Domingo)
+        is_sunday = current_date.weekday() == 6
         
-        # Filtrar horários passados se for o dia atual
-        if not is_past and current_date == today:
-            now_time = get_local_now().strftime("%H:%M")
-            # Disponível apenas se houver slot ativo, não tomado E futuro
-            disponivel = any(s.get("available", True) and s["time"] > now_time for s in slots)
+        if is_sunday:
+            disponivel = False
         else:
-            disponivel = any(s.get("available", True) for s in slots)
+            slots = storage.get_availability(d, year=year, month=month, barber_id=barber_id, barbershop_id=barbershop_id)
+            
+            # Filtrar horários passados se for o dia atual
+            if not is_past and current_date == today:
+                now_time = get_local_now().strftime("%H:%M")
+                # Disponível apenas se houver slot ativo, não tomado E futuro
+                disponivel = any(s.get("available", True) and s["time"] > now_time for s in slots)
+            else:
+                disponivel = any(s.get("available", True) for s in slots)
 
         dias.append({
             "tipo": "dia",
             "numero": f"{d:02d}", 
             "raw_numero": d,
             "disponivel": disponivel,
-            "passado": is_past
+            "passado": is_past or is_sunday
         })
         
     return {
@@ -311,31 +317,47 @@ def reservar():
     if not service:
         service = "corte de cabelo"
 
-    customer_name = request.form.get("customer_name") or (request.json and request.json.get("customer_name"))
+    # Processamento de múltiplos serviços
+    service_ids = request.form.getlist("service_ids") or (request.json and request.json.get("service_ids"))
+    total_price_cents = 0
+    
+    if service_ids:
+        for sid in service_ids:
+            try:
+                s_info = storage.get_service_by_id(int(sid), barbershop_id=barbershop_id)
+                if s_info:
+                    total_price_cents += (s_info["price_cents"] or 0)
+            except:
+                pass
+    else:
+        # Fallback para serviços padrão se não houver IDs (compatibilidade ou falta de cadastro)
+        s_lower = service.lower()
+        if "corte" in s_lower and "barba" in s_lower:
+            total_price_cents = 5500
+        elif "corte" in s_lower:
+            total_price_cents = 3500
+        elif "barba" in s_lower:
+            total_price_cents = 2000
+
+    # Pega ID do barbeiro da requisição
     barber_id = request.form.get("barber_id") or (request.json and request.json.get("barber_id"))
-    service_id = request.form.get("service_id") or (request.json and request.json.get("service_id"))
+    customer_name = request.form.get("customer_name") or (request.json and request.json.get("customer_name"))
+    
     try:
         if barber_id:
             barber_id = int(barber_id)
     except:
         barber_id = None
 
-    price_cents = None
-    try:
-        if service_id:
-            service_id_int = int(service_id)
-        else:
-            service_id_int = None
-    except:
-        service_id_int = None
-    if service_id_int:
-        svc = storage.get_service_by_id(service_id_int, barber_id=barber_id, barbershop_id=barbershop_id)
-        if svc:
-            if not service:
-                service = svc["name"]
-            price_cents = svc["price_cents"]
-
-    ok = storage.create_booking(user_id, dia, horario, service, year=year, month=month, customer_phone=None, barber_id=barber_id, customer_name=customer_name, barbershop_id=barbershop_id, price_cents=price_cents, service_id=service_id_int)
+    ok = storage.create_booking(
+        user_id, dia, horario, service, 
+        year=year, month=month, 
+        customer_phone=None, 
+        barber_id=barber_id, 
+        customer_name=customer_name, 
+        barbershop_id=barbershop_id, 
+        price_cents=total_price_cents
+    )
     if ok:
         return jsonify({"success": True})
     else:

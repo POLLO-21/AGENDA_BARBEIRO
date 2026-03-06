@@ -30,9 +30,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const painelMonth = painelBarbeiro ? parseInt(painelBarbeiro.dataset.mes) : null;
     let selectedDay = null;
     let selectedTime = null;
-    let selectedService = null;
-    let selectedServiceId = null;
-    let selectedServicePrice = null;
+    let selectedServices = []; // Agora suporta múltiplos
+    let selectedServiceIds = [];
+    let totalPrice = 0;
 
     if (!painelBarbeiro) {
         document.querySelectorAll(".dia[data-dia]").forEach(card => {
@@ -280,8 +280,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const inputName = document.getElementById("customer-name");
         const container = document.getElementById("servico-options-container");
 
-        selectedService = null;
-        selectedServiceId = null;
+        selectedServices = [];
+        selectedServiceIds = [];
+        totalPrice = 0;
         if (btnConfirmar) btnConfirmar.disabled = true;
         if (inputName) inputName.value = "";
 
@@ -292,13 +293,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 lista = services.map(s => ({
                     id: s.id,
                     label: s.name,
-                    price: s.price_cents ? (s.price_cents / 100).toFixed(2).replace('.', ',') : null
+                    price_cents: s.price_cents,
+                    price_str: s.price_cents ? (s.price_cents / 100).toFixed(2).replace('.', ',') : null
                 }));
             } else {
                 lista = [
-                    { id: null, label: "corte de cabelo", price: null },
-                    { id: null, label: "corte de cabelo e barba", price: null },
-                    { id: null, label: "somente barba", price: null }
+                    { id: null, label: "corte de cabelo", price_cents: 3500, price_str: "35,00" },
+                    { id: null, label: "barba", price_cents: 2000, price_str: "20,00" }
                 ];
             }
             lista.forEach(s => {
@@ -307,28 +308,44 @@ document.addEventListener("DOMContentLoaded", () => {
                 btn.className = "btn btn-secondary btn-sm btn-servico";
                 
                 // Texto do botão com preço se existir
-                if (s.price) {
-                    btn.innerHTML = `${s.label} <span style="font-size:0.85em; opacity:0.8; margin-left:4px;">(R$ ${s.price})</span>`;
+                if (s.price_str) {
+                    btn.innerHTML = `${s.label} <span style="font-size:0.85em; opacity:0.8; margin-left:4px;">(R$ ${s.price_str})</span>`;
                 } else {
                     btn.textContent = s.label;
                 }
                 
                 btn.dataset.servico = s.label;
-                btn.dataset.preco = s.price || "";
+                btn.dataset.precoCents = s.price_cents || 0;
                 if (s.id) btn.dataset.serviceId = String(s.id);
+                
                 btn.onclick = () => {
-                    selectedService = btn.getAttribute("data-servico");
-                    selectedServiceId = btn.dataset.serviceId ? parseInt(btn.dataset.serviceId) : null;
-                    selectedServicePrice = btn.dataset.preco ? `R$ ${btn.dataset.preco}` : "";
+                    const servName = btn.dataset.servico;
+                    const servId = btn.dataset.serviceId ? parseInt(btn.dataset.serviceId) : null;
+                    const pCents = parseInt(btn.dataset.precoCents);
+
+                    if (btn.classList.contains("btn-primary")) {
+                        // Deselecionar
+                        btn.classList.remove("btn-primary");
+                        btn.classList.add("btn-secondary");
+                        selectedServices = selectedServices.filter(n => n !== servName);
+                        selectedServiceIds = selectedServiceIds.filter(id => id !== servId);
+                        totalPrice -= pCents;
+                    } else {
+                        // Selecionar
+                        btn.classList.remove("btn-secondary");
+                        btn.classList.add("btn-primary");
+                        selectedServices.push(servName);
+                        if (servId) selectedServiceIds.push(servId);
+                        totalPrice += pCents;
+                    }
                     
-                    container.querySelectorAll(".btn-servico").forEach(b => {
-                        b.classList.remove("btn-primary");
-                        b.classList.add("btn-secondary");
-                    });
-                    btn.classList.remove("btn-secondary");
-                    btn.classList.add("btn-primary");
-                    if (selectedDay && selectedTime && selectedService && btnConfirmar) {
+                    if (selectedDay && selectedTime && selectedServices.length > 0 && btnConfirmar) {
                         btnConfirmar.disabled = false;
+                        const totalStr = (totalPrice / 100).toFixed(2).replace('.', ',');
+                        btnConfirmar.textContent = `Confirmar (Total: R$ ${totalStr})`;
+                    } else if (btnConfirmar) {
+                        btnConfirmar.disabled = true;
+                        btnConfirmar.textContent = "Confirmar agendamento";
                     }
                 };
                 container.appendChild(btn);
@@ -357,19 +374,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (btnConfirmar) {
             btnConfirmar.onclick = () => {
-                if (selectedDay && selectedTime && selectedService) {
+                if (selectedDay && selectedTime && selectedServices.length > 0) {
                     const name = inputName ? inputName.value : "";
-                    fazerReserva(selectedDay, selectedTime, selectedService, agendaYear, agendaMonth, name, selectedServiceId);
+                    fazerReserva(selectedDay, selectedTime, selectedServices.join(" + "), agendaYear, agendaMonth, name, selectedServiceIds);
                 }
             };
         }
     }
 
-    function fazerReserva(dia, horario, servico, ano, mes, name, serviceId) {
+    function fazerReserva(dia, horario, servico, ano, mes, name, serviceIds) {
         // Confirmação removida conforme pedido (o clique no botão já serve de confirmação)
         
         const diaStr = String(dia).padStart(2, '0');
         const mesStr = String(mes).padStart(2, '0');
+        const totalStr = (totalPrice / 100).toFixed(2).replace('.', ',');
         
         // Pega ID do barbeiro da página
         const agendaPage = document.getElementById("agenda-page");
@@ -391,9 +409,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 service: servico, 
                 ano: ano, 
                 mes: mes, 
-                customer_name: name,
+                customer_name: name, 
                 barber_id: barberId,
-                service_id: serviceId
+                service_ids: serviceIds
             })
         }).then(r => r.json()).then(res => {
             if(res.success){
@@ -415,7 +433,7 @@ document.addEventListener("DOMContentLoaded", () => {
                          const cleanPhone = shopPhone.replace(/\D/g, '');
                          
                          let msg = `Olá! Acabei de agendar um horário:\nData: ${diaStr}/${mesStr}/${ano}\nHorário: ${horario}\nServiço: ${servico}`;
-                         if (selectedServicePrice) msg += `\nValor: ${selectedServicePrice}`;
+                         if (totalPrice > 0) msg += `\nValor Total: R$ ${totalStr}`;
                          if (name) msg += `\nCliente: ${name}`;
                          
                          const waUrl = `https://wa.me/${prefix}${cleanPhone}?text=${encodeURIComponent(msg)}`;
