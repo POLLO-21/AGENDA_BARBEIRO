@@ -23,8 +23,10 @@
                 <input type="hidden" name="service_id" value="{{ s.id }}">
                 <input type="text" name="name" value="{{ s.name }}" required>
                 <input type="text" name="price" value="{{ '%.2f'|format((s.price_cents or 0) / 100) }}" required>
-                <button type="submit" class="btn btn-secondary btn-sm">Salvar</button>
-                <button type="submit" name="action" value="delete_service" class="btn btn-danger btn-sm">Remover</button>
+                <div class="finance-item-actions">
+                  <button type="submit" class="btn btn-secondary btn-sm">Salvar</button>
+                  <button type="submit" name="action" value="delete_service" class="btn btn-danger btn-sm">Remover</button>
+                </div>
               </form>
             {% endfor %}
           {% else %}
