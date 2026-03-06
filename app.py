@@ -92,8 +92,8 @@ def selecionar_loja_slug(slug):
 def login():
     erro = ""
     if request.method == "POST":
-        usuario = request.form.get("usuario")
-        senha = request.form.get("senha")
+        usuario = request.form.get("usuario", "").strip()
+        senha = request.form.get("senha", "")
         user = storage.verify_user(usuario, senha)
         if user:
             session.permanent = True

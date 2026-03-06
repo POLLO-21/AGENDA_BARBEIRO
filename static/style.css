@@ -932,18 +932,17 @@ h2 {
     }
 
     .finance-layout {
-        display: flex;
-        flex-direction: column;
+        display: block; /* Garante empilhamento real */
         width: 100%;
-        max-width: 100%;
         margin: 0;
         padding: 0;
-        gap: 1rem;
     }
 
     .finance-card {
         width: 100%;
+        margin-bottom: 1.5rem;
         box-sizing: border-box;
+        overflow-x: hidden; /* Evita que o card estoure */
     }
 
     .finance-service-form .finance-form-row {
@@ -953,38 +952,53 @@ h2 {
         gap: 0.75rem;
     }
 
+    .finance-services-list {
+        width: 100%;
+    }
+
     .finance-service-item {
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
-        padding: 1rem 0;
+        padding: 1.25rem 0;
         border-bottom: 1px solid #e5e7eb;
+        width: 100%;
     }
 
     .finance-service-item input {
-        width: 100%;
+        width: 100% !important;
         box-sizing: border-box;
+        font-size: 16px; /* Evita zoom automático no iOS */
     }
 
     .finance-service-item .finance-item-actions {
         display: flex;
         gap: 0.5rem;
+        margin-top: 0.25rem;
     }
 
     .finance-service-item .finance-item-actions button {
         flex: 1;
+        padding: 0.75rem; /* Botões maiores para mobile */
     }
 
     .finance-chart-row {
         display: flex;
         flex-direction: column;
         align-items: stretch;
-        gap: 0.25rem;
-        margin-bottom: 0.75rem;
+        gap: 0.5rem;
+        margin-bottom: 1.25rem;
+        padding: 0.5rem 0;
+    }
+
+    .finance-chart-bar-wrap {
+        height: 12px;
     }
 
     .finance-chart-value {
-        text-align: left;
+        text-align: right;
+        font-weight: 600;
+        color: #10b981;
     }
 
     .appointment-card {
