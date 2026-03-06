@@ -926,6 +926,38 @@ h2 {
         justify-content: center;
     }
 
+    /* Ajustes Financeiro Mobile */
+    .finance-layout {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .finance-service-form .finance-form-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+
+    .finance-service-item {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .finance-service-item input:nth-child(1) {
+        grid-column: 1 / span 2;
+    }
+
+    .finance-service-item button {
+        flex: 1;
+    }
+
+    .finance-chart-row {
+        grid-template-columns: 1fr 2fr 1fr;
+        font-size: 0.85rem;
+    }
+
     .appointment-card {
         flex-direction: column;
         align-items: flex-start;
