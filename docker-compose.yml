@@ -10,7 +10,8 @@ services:
       - DATABASE_URL=sqlite:///instance/agenda.db
       - FLASK_ENV=production
     volumes:
-      # Mapeia a pasta instance para não perder o banco de dados e agendamentos
+      # Mapeia os arquivos principais para que as atualizações de CSS/JS/HTML e Python funcionem com restart
+      - .:/app
       - ./instance:/app/instance
     ports:
       - "127.0.0.1:8000:8000"
